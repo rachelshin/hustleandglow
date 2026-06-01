@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Hot-pink rounded square background -->
+  <rect width="32" height="32" rx="8" fill="#E91E8C"/>
+  <!-- Gold 4-pointed sparkle star -->
+  <path d="M16 4 L19 13 L28 16 L19 19 L16 28 L13 19 L4 16 L13 13 Z" fill="#FFF176"/>
+  <!-- Small accent sparkle dots -->
+  <circle cx="25" cy="7"  r="1.8" fill="white" opacity="0.75"/>
+  <circle cx="8"  cy="25" r="1.2" fill="white" opacity="0.55"/>
+</svg>
