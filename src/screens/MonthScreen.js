@@ -41,26 +41,28 @@ export default function MonthScreen({ navigation }) {
   const [selectedKey, setSelectedKey] = useState(todayKey());
   const [infoVisible, setInfoVisible] = useState(false);
 
-  // Export + info buttons in the header
+  // Info (left) + Export (right) buttons in the header
   useEffect(() => {
     navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => setInfoVisible(true)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ marginLeft: spacing.md }}
+          accessibilityLabel="About this app"
+        >
+          <InfoIcon size={22} color={colors.primaryDeep} />
+        </TouchableOpacity>
+      ),
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginRight: spacing.md }}>
-          <TouchableOpacity
-            onPress={() => setInfoVisible(true)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityLabel="About this app"
-          >
-            <InfoIcon size={22} color={colors.primaryDeep} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => exportCSV(entries, categories, getDayHours)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityLabel="Export CSV"
-          >
-            <ExportIcon size={22} color={colors.primaryDeep} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => exportCSV(entries, categories, getDayHours)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ marginRight: spacing.md }}
+          accessibilityLabel="Export CSV"
+        >
+          <ExportIcon size={22} color={colors.primaryDeep} />
+        </TouchableOpacity>
       ),
     });
   }, [navigation, entries, categories, getDayHours]);
@@ -258,13 +260,13 @@ export default function MonthScreen({ navigation }) {
           <TouchableOpacity activeOpacity={1} style={styles.infoCard}>
             <Text style={styles.infoTitle}>Hustle & Glow ✨</Text>
             <Text style={styles.infoBody}>
-              Love using this app? You can get the full version and support the developer in the Ko-fi store!
+              This app is free — always. If you'd like to support getting it listed in the App Store, donations on Ko-fi go directly toward that goal.
             </Text>
             <TouchableOpacity
               style={styles.infoLink}
               onPress={() => Linking.openURL('https://ko-fi.com/nextrightthing')}
             >
-              <Text style={styles.infoLinkText}>Get it on Ko-fi →</Text>
+              <Text style={styles.infoLinkText}>Support on Ko-fi →</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.infoDismiss}
