@@ -138,7 +138,7 @@ const shell = StyleSheet.create({
 // ── App shell — auth gate ─────────────────────────────────────────────────────
 
 function AppShell() {
-  const { user, authChecked, syncing } = useApp();
+  const { user, authChecked } = useApp();
 
   // Firebase hasn't resolved auth state yet
   if (!authChecked) {
@@ -150,12 +150,8 @@ function AppShell() {
     return <SignInScreen />;
   }
 
-  // Logged in but still pulling data from Firestore
-  if (syncing) {
-    return <LoadingScreen message="Syncing your data…" />;
-  }
-
-  // Fully ready — show the main app
+  // Logged in — show the app immediately, hooks load from local storage
+  // while Firestore subscriptions refresh data in the background
   return (
     <NavigationContainer>
       <Stack.Navigator>

@@ -13,7 +13,7 @@
 //      so phone + laptop open at the same time stay in sync automatically.
 //   6. On logout, clearLocalData() wipes AsyncStorage.
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useCategories } from '../hooks/useCategories';
 import { useEntries } from '../hooks/useEntries';
@@ -27,9 +27,6 @@ const AppContext = createContext(null);
 /** Wrap your root navigator with this so all screens share state. */
 export function AppProvider({ children }) {
   const { user, signIn, signUp: firebaseSignUp, logOut } = useAuth();
-
-  // true while we're pulling cloud data into AsyncStorage after login.
-  const [syncing, setSyncing] = useState(true);
 
   // Tracks whether the current auth transition is a brand-new sign-up, so we
   // push local data to the cloud instead of pulling (which would overwrite it).
@@ -54,35 +51,36 @@ export function AppProvider({ children }) {
       // If wasLoggedIn is false this is just "not logged in on first load" —
       // leave AsyncStorage untouched so sign-up can upload existing data.
       wasLoggedIn.current = false;
-      setSyncing(false);
       return;
     }
 
-    // Logged in: sync data then let hooks reload.
+    // Logged in: run cloud sync in the background without blocking the UI.
+    // Hooks load from local AsyncStorage immediately (instant), and their
+    // onSnapshot subscriptions update state when Firestore responds (~1s).
+    // syncFromCloud / pushLocalToCloud only matters on a brand-new device
+    // where AsyncStorage is empty — the subscription would cover it anyway,
+    // but running it in the background gives a head start.
     wasLoggedIn.current = true;
-    setSyncing(true);
     (async () => {
       try {
         if (isNewSignup.current) {
-          // New account: push any existing local data up to Firestore.
+          // New account: push any existing local data up to Firestore before
+          // the subscription fires (so we don't overwrite it with null).
           isNewSignup.current = false;
           await pushLocalToCloud(user.uid);
         } else {
-          // Returning user: pull their cloud data into AsyncStorage.
           await syncFromCloud(user.uid);
         }
       } catch (e) {
-        // Sync failure is non-fatal — app runs on local data.
         console.warn('Cloud sync error (continuing with local data):', e);
-      } finally {
-        setSyncing(false);
       }
     })();
   }, [user]);
 
-  // Pass a non-null userId to hooks only after sync is complete.
-  // While syncing (or logged out), pass null so hooks stay in their cleared state.
-  const syncedUserId = (!syncing && user) ? user.uid : null;
+  // Pass userId to hooks as soon as auth is confirmed — no sync gate.
+  // Hooks read local AsyncStorage immediately, then Firestore subscriptions
+  // keep data fresh without any blocking wait.
+  const syncedUserId = (user && user !== undefined) ? user.uid : null;
 
   const categoriesState = useCategories(syncedUserId);
   const entriesState    = useEntries(syncedUserId);
@@ -114,7 +112,6 @@ export function AppProvider({ children }) {
     // Auth
     user,
     authChecked: user !== undefined,
-    syncing,
     signIn: handleSignIn,
     signUp: handleSignUp,
     signInWithGoogle: firebaseGoogleSignIn,
