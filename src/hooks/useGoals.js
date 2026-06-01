@@ -57,7 +57,11 @@ export function useGoals(entries, entryDates, getDayHours, userId) {
     saveGoals(updated, userId);
   }, [userId]);
 
-  const addGoal = useCallback((type, amount, period, startDate, days, repeat) => {
+  const addGoal = useCallback((type, amount, period, startDate, days, repeat, text) => {
+    if (type === 'text') {
+      persist([...goals, { id: makeId(), type: 'text', text, checked: false }]);
+      return;
+    }
     persist([...goals, {
       id: makeId(), type, amount: Number(amount),
       period, startDate: startDate ?? null,
@@ -76,9 +80,14 @@ export function useGoals(entries, entryDates, getDayHours, userId) {
     persist(goals.filter(g => g.id !== id));
   }, [goals, persist]);
 
+  const toggleTextGoal = useCallback((id) => {
+    persist(goals.map(g => g.id === id ? { ...g, checked: !g.checked } : g));
+  }, [goals, persist]);
+
   const streak = useMemo(() => calcStreak(entryDates), [entryDates]);
 
   const goalsWithStats = goals.map(goal => {
+    if (goal.type === 'text') return goal;
     const start = effectiveStartDate(goal);
     const keys  = getPeriodKeys(goal.period, start, goal.days);
     const periodValue = goal.type === 'money'
@@ -124,5 +133,5 @@ export function useGoals(entries, entryDates, getDayHours, userId) {
     return result;
   }, [entries]);
 
-  return { goals: goalsWithStats, addGoal, updateGoal, removeGoal, streak, wins };
+  return { goals: goalsWithStats, addGoal, updateGoal, removeGoal, toggleTextGoal, streak, wins };
 }

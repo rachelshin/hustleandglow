@@ -100,8 +100,6 @@ function SubcategoryForm({ initial, onSave, onClose }) {
           style={shared.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Chaturbate, OnlyFans…"
-          placeholderTextColor={colors.textMuted}
         />
 
         {/* ── Payment type ──────────────────────────────────────────────── */}
@@ -129,8 +127,6 @@ function SubcategoryForm({ initial, onSave, onClose }) {
               value={tokenRate}
               onChangeText={setTokenRate}
               keyboardType="decimal-pad"
-              placeholder="e.g. 0.05"
-              placeholderTextColor={colors.textMuted}
             />
           </>
         )}
@@ -174,8 +170,6 @@ function CategoryForm({ initial, onSave, onClose }) {
           style={shared.input}
           value={name}
           onChangeText={setName}
-          placeholder="e.g. Cam, Subscriptions, Clips…"
-          placeholderTextColor={colors.textMuted}
         />
         <View style={sheet.actions}>
           <TouchableOpacity style={shared.ghostButton} onPress={onClose}>

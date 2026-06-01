@@ -64,8 +64,8 @@ function TabNavigator() {
           backgroundColor: colors.tabBg,
           borderTopColor:  colors.border,
           borderTopWidth:  1.5,
-          paddingBottom:   4,
-          height:          60,
+          paddingBottom:   14,
+          height:          70,
         },
         tabBarLabelStyle: {
           fontSize:   font.xs,

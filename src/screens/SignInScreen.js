@@ -129,8 +129,6 @@ export default function SignInScreen() {
             style={shared.input}
             value={email}
             onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             keyboardType="email-address"
             autoCorrect={false}
@@ -143,8 +141,6 @@ export default function SignInScreen() {
             style={shared.input}
             value={password}
             onChangeText={setPassword}
-            placeholder={isSignUp ? 'At least 6 characters' : '••••••••'}
-            placeholderTextColor={colors.textMuted}
             secureTextEntry
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
             returnKeyType={isSignUp ? 'next' : 'done'}
@@ -158,8 +154,6 @@ export default function SignInScreen() {
                 style={shared.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Repeat your password"
-                placeholderTextColor={colors.textMuted}
                 secureTextEntry
                 autoComplete="new-password"
                 returnKeyType="done"

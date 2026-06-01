@@ -101,9 +101,11 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.heroRight}>
           {activeShift ? (
             <Text style={styles.elapsed}>{formatElapsed(elapsed)}</Text>
-          ) : todayHours > 0 ? (
-            <Text style={styles.hoursToday}>{formatHours(todayHours)}{'\n'}today</Text>
-          ) : null}
+          ) : (
+            <Text style={styles.hoursToday}>
+              {todayHours > 0 ? formatHours(todayHours) : '0 min'}{'\n'}today
+            </Text>
+          )}
         </View>
       </View>
 

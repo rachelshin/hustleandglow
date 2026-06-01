@@ -20,8 +20,8 @@ import shared from '../styles/shared';
 
 const PERIODS = ['daily', 'custom'];
 const PERIOD_LABELS = { daily: 'Daily', custom: 'Custom' };
-const TYPES = ['money', 'time'];
-const TYPE_LABELS = { money: '💰 Money', time: '⏱️ Time' };
+const TYPES = ['money', 'time', 'text'];
+const TYPE_LABELS = { money: '💰 Money', time: '⏱️ Time', text: '✅ Goal' };
 const KB_HEIGHT = Dimensions.get('window').height * 0.42;
 
 // ── Goal form ─────────────────────────────────────────────────────────────────
@@ -29,6 +29,7 @@ const KB_HEIGHT = Dimensions.get('window').height * 0.42;
 function GoalForm({ current, onSave, onClose }) {
   const [type,      setType]      = useState(current?.type      ?? 'money');
   const [amount,    setAmount]    = useState(current?.amount    ? String(current.amount) : '');
+  const [goalText,  setGoalText]  = useState(current?.text      ?? '');
   const [period,    setPeriod]    = useState(current?.period    ?? 'daily');
   const [days,      setDays]      = useState(current?.days      ? String(current.days)   : '');
   const [repeat,    setRepeat]    = useState(current?.repeat    ?? false);
@@ -36,21 +37,32 @@ function GoalForm({ current, onSave, onClose }) {
     current?.startDate ? new Date(current.startDate + 'T00:00:00') : new Date()
   );
   const [showPicker, setShowPicker] = useState(false);
-  const inputRef = useRef(null);
+  const inputRef   = useRef(null);
+  const textRef    = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    const t = setTimeout(() => {
+      if (type === 'text') textRef.current?.focus();
+      else inputRef.current?.focus();
+    }, 100);
     return () => clearTimeout(t);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isText   = type === 'text';
   const isTime   = type === 'time';
   const isCustom = period === 'custom';
-  const canSave  = Number(amount) > 0 && (!isCustom || Number(days) > 0);
+  const canSave  = isText
+    ? goalText.trim().length > 0
+    : Number(amount) > 0 && (!isCustom || Number(days) > 0);
 
   const handleSave = () => {
     if (!canSave) return;
+    if (isText) {
+      onSave('text', null, null, null, null, false, goalText.trim());
+      return;
+    }
     const startKey = isCustom ? toKey(startDate) : null;
-    onSave(type, amount, period, startKey, isCustom ? Number(days) : null, isCustom ? repeat : false);
+    onSave(type, amount, period, startKey, isCustom ? Number(days) : null, isCustom ? repeat : false, null);
   };
 
   return (
@@ -73,93 +85,104 @@ function GoalForm({ current, onSave, onClose }) {
           ))}
         </View>
 
-        <Text style={form.label}>{isTime ? 'Goal hours' : 'Goal amount ($)'}</Text>
-        <TextInput
-          ref={inputRef}
-          style={shared.input}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
-          placeholder={isTime ? 'e.g. 8' : 'e.g. 200'}
-          placeholderTextColor={colors.textMuted}
-        />
-
-        <Text style={form.label}>Period</Text>
-        <View style={form.toggle}>
-          {PERIODS.map((p) => (
-            <TouchableOpacity
-              key={p}
-              style={[form.toggleOption, period === p && form.toggleActive]}
-              onPress={() => setPeriod(p)}
-            >
-              <Text style={[form.toggleText, period === p && form.toggleTextActive]}>
-                {PERIOD_LABELS[p]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {isCustom && (
+        {isText ? (
           <>
-            <Text style={form.label}>Start date</Text>
-            {Platform.OS === 'web' ? (
-              createElement('input', {
-                type: 'date',
-                value: toKey(startDate),
-                onChange: (e) => {
-                  const d = new Date(e.target.value + 'T00:00:00');
-                  if (!isNaN(d)) setStartDate(d);
-                },
-                style: {
-                  fontSize: 16, padding: 12, borderRadius: 10,
-                  border: '1.5px solid #FFD1E8', backgroundColor: '#FFF0F5',
-                  color: '#2D0A1F', alignSelf: 'stretch', outline: 'none',
-                  boxSizing: 'border-box',
-                },
-              })
-            ) : Platform.OS === 'ios' ? (
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display="compact"
-                onChange={(_, d) => d && setStartDate(d)}
-                style={{ alignSelf: 'flex-start', marginLeft: -8 }}
-              />
-            ) : (
-              <>
-                <TouchableOpacity style={shared.input} onPress={() => setShowPicker(true)}>
-                  <Text style={{ color: colors.textDark }}>{shortDate(toKey(startDate))}</Text>
+            <Text style={form.label}>What's the goal?</Text>
+            <TextInput
+              ref={textRef}
+              style={shared.input}
+              value={goalText}
+              onChangeText={setGoalText}
+              autoCapitalize="sentences"
+            />
+          </>
+        ) : (
+          <>
+            <Text style={form.label}>{isTime ? 'Goal hours' : 'Goal amount ($)'}</Text>
+            <TextInput
+              ref={inputRef}
+              style={shared.input}
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={form.label}>Period</Text>
+            <View style={form.toggle}>
+              {PERIODS.map((p) => (
+                <TouchableOpacity
+                  key={p}
+                  style={[form.toggleOption, period === p && form.toggleActive]}
+                  onPress={() => setPeriod(p)}
+                >
+                  <Text style={[form.toggleText, period === p && form.toggleTextActive]}>
+                    {PERIOD_LABELS[p]}
+                  </Text>
                 </TouchableOpacity>
-                {showPicker && (
+              ))}
+            </View>
+
+            {isCustom && (
+              <>
+                <Text style={form.label}>Start date</Text>
+                {Platform.OS === 'web' ? (
+                  createElement('input', {
+                    type: 'date',
+                    value: toKey(startDate),
+                    onChange: (e) => {
+                      const d = new Date(e.target.value + 'T00:00:00');
+                      if (!isNaN(d)) setStartDate(d);
+                    },
+                    style: {
+                      fontSize: 16, padding: 12, borderRadius: 10,
+                      border: '1.5px solid #FFD1E8', backgroundColor: '#FFF0F5',
+                      color: '#2D0A1F', alignSelf: 'stretch', outline: 'none',
+                      boxSizing: 'border-box',
+                    },
+                  })
+                ) : Platform.OS === 'ios' ? (
                   <DateTimePicker
                     value={startDate}
                     mode="date"
-                    display="default"
-                    onChange={(_, d) => { setShowPicker(false); if (d) setStartDate(d); }}
+                    display="compact"
+                    onChange={(_, d) => d && setStartDate(d)}
+                    style={{ alignSelf: 'flex-start', marginLeft: -8 }}
                   />
+                ) : (
+                  <>
+                    <TouchableOpacity style={shared.input} onPress={() => setShowPicker(true)}>
+                      <Text style={{ color: colors.textDark }}>{shortDate(toKey(startDate))}</Text>
+                    </TouchableOpacity>
+                    {showPicker && (
+                      <DateTimePicker
+                        value={startDate}
+                        mode="date"
+                        display="default"
+                        onChange={(_, d) => { setShowPicker(false); if (d) setStartDate(d); }}
+                      />
+                    )}
+                  </>
                 )}
+
+                <Text style={form.label}>Number of days</Text>
+                <TextInput
+                  style={shared.input}
+                  value={days}
+                  onChangeText={setDays}
+                  keyboardType="number-pad"
+                />
+
+                <View style={form.repeatRow}>
+                  <Text style={form.label}>Repeat when period ends</Text>
+                  <Switch
+                    value={repeat}
+                    onValueChange={setRepeat}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor={colors.card}
+                  />
+                </View>
               </>
             )}
-
-            <Text style={form.label}>Number of days</Text>
-            <TextInput
-              style={shared.input}
-              value={days}
-              onChangeText={setDays}
-              keyboardType="number-pad"
-              placeholder="e.g. 3"
-              placeholderTextColor={colors.textMuted}
-            />
-
-            <View style={form.repeatRow}>
-              <Text style={form.label}>Repeat when period ends</Text>
-              <Switch
-                value={repeat}
-                onValueChange={setRepeat}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={colors.card}
-              />
-            </View>
           </>
         )}
 
@@ -192,6 +215,41 @@ function ProgressBar({ progress }) {
           style={[bar.tick, { left: `${mark * 100}%`, opacity: pct >= mark ? 0.4 : 0.2 }]}
         />
       ))}
+    </View>
+  );
+}
+
+// ── Text goal card ────────────────────────────────────────────────────────────
+
+function TextGoalCard({ goal, onToggle, onRemove }) {
+  const [justChecked, setJustChecked] = useState(false);
+
+  const handleToggle = () => {
+    if (!goal.checked) {
+      setJustChecked(true);
+      setTimeout(() => setJustChecked(false), 1800);
+    }
+    onToggle(goal.id);
+  };
+
+  return (
+    <View style={styles.card}>
+      <TouchableOpacity style={styles.textGoalX} onPress={() => onRemove(goal.id)}>
+        <Text style={styles.textGoalXIcon}>✕</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.textGoalRow} onPress={handleToggle} activeOpacity={0.7}>
+        <View style={[styles.textCheckbox, goal.checked && styles.textCheckboxDone]}>
+          {goal.checked && <Text style={styles.textCheckmark}>✓</Text>}
+        </View>
+        <Text style={[styles.textGoalLabel, goal.checked && styles.textGoalStrike]}>
+          {goal.text}
+        </Text>
+      </TouchableOpacity>
+
+      {justChecked && (
+        <Text style={styles.textGoalCelebration}>🎉 YES!! You did it!</Text>
+      )}
     </View>
   );
 }
@@ -257,7 +315,7 @@ function GoalCard({ goal, onEdit, onRemove }) {
 
 export default function HypeScreen() {
   const {
-    goals, addGoal, updateGoal, removeGoal,
+    goals, addGoal, updateGoal, removeGoal, toggleTextGoal,
     streak,
     wins,
     getDayHours,
@@ -282,11 +340,11 @@ export default function HypeScreen() {
   const closeForm    = () => setFormState(null);
   const editingGoal  = formState?.editId ? goals.find(g => g.id === formState.editId) : null;
 
-  const handleSave = (type, amount, period, startDate, days, repeat) => {
+  const handleSave = (type, amount, period, startDate, days, repeat, text) => {
     if (formState.editId) {
-      updateGoal(formState.editId, type, amount, period, startDate, days, repeat);
+      updateGoal(formState.editId, type, amount, period, startDate, days, repeat, text);
     } else {
-      addGoal(type, amount, period, startDate, days, repeat);
+      addGoal(type, amount, period, startDate, days, repeat, text);
     }
     closeForm();
   };
@@ -311,8 +369,6 @@ export default function HypeScreen() {
               onChangeText={setWhyText}
               onBlur={handleWhyBlur}
               multiline
-              placeholder="Why do I work?"
-              placeholderTextColor={colors.primary}
             />
           ) : (
             <Text style={whyText ? styles.whyText : styles.whyPlaceholder}>
@@ -322,7 +378,14 @@ export default function HypeScreen() {
         </TouchableOpacity>
 
         {/* ── Goal cards ─────────────────────────────────────────────── */}
-        {goals.map((g) => (
+        {goals.map((g) => g.type === 'text' ? (
+          <TextGoalCard
+            key={g.id}
+            goal={g}
+            onToggle={toggleTextGoal}
+            onRemove={() => removeGoal(g.id)}
+          />
+        ) : (
           <GoalCard
             key={g.id}
             goal={g}
@@ -507,6 +570,60 @@ const styles = StyleSheet.create({
     color: colors.primaryDeep,
     textAlign: 'center',
     paddingVertical: spacing.xs,
+  },
+  textGoalX: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    padding: 4,
+    zIndex: 1,
+  },
+  textGoalXIcon: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: '700',
+  },
+  textGoalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingRight: 28,
+  },
+  textCheckbox: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.sm,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  textCheckboxDone: {
+    backgroundColor: colors.primary,
+  },
+  textCheckmark: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  textGoalLabel: {
+    flex: 1,
+    fontSize: font.md,
+    fontWeight: '600',
+    color: colors.textDark,
+    lineHeight: 22,
+  },
+  textGoalStrike: {
+    textDecorationLine: 'line-through',
+    color: colors.textMuted,
+  },
+  textGoalCelebration: {
+    fontSize: font.sm,
+    fontWeight: '800',
+    color: colors.primary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   addGoalCard: {
     backgroundColor: colors.card,
