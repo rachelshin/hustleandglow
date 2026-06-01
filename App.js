@@ -15,7 +15,7 @@
 //   ├── EntryInput      (navigated to from any tab)
 //   └── CategoryManager (navigated to from Home's "Add Sites" link)
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationContainer } from '@react-navigation/native';
@@ -139,9 +139,14 @@ const shell = StyleSheet.create({
 
 function AppShell() {
   const { user, authChecked } = useApp();
+  const [minDelayDone, setMinDelayDone] = useState(false);
 
-  // Firebase hasn't resolved auth state yet
-  if (!authChecked) {
+  useEffect(() => {
+    const t = setTimeout(() => setMinDelayDone(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!authChecked || !minDelayDone) {
     return <LoadingScreen />;
   }
 
