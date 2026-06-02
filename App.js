@@ -15,8 +15,8 @@
 //   ├── EntryInput      (navigated to from any tab)
 //   └── CategoryManager (navigated to from Home's "Add Sites" link)
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Animated, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -107,12 +107,21 @@ const navStyles = StyleSheet.create({
 
 // ── Loading screen ────────────────────────────────────────────────────────────
 
-function LoadingScreen({ message }) {
+function LoadingScreen() {
+  const opacity = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1,   duration: 900, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
   return (
     <View style={shell.loading}>
-      <Text style={shell.loadingEmoji}>✨</Text>
-      <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 16 }} />
-      {message ? <Text style={shell.loadingText}>{message}</Text> : null}
+      <Animated.Text style={[shell.loadingEmoji, { opacity }]}>✨</Animated.Text>
     </View>
   );
 }
@@ -126,12 +135,6 @@ const shell = StyleSheet.create({
   },
   loadingEmoji: {
     fontSize: 48,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: font.sm,
-    color: colors.textMuted,
-    fontStyle: 'italic',
   },
 });
 
