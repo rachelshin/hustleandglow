@@ -138,19 +138,55 @@ export function getPeriodKeys(period, startDate, days) {
 }
 
 /**
- * Count consecutive days with entries, ending today (or yesterday if today is empty).
- * @param {string[]} entryDates - sorted descending
+ * Count worked days in a continuous run using calendar weeks (Mon–Sun).
+ * Each week allows up to 2 missed days; a week with 3+ missed days ends the streak.
+ * Streak = total days worked across all valid weeks.
  */
 export function calcStreak(entryDates) {
   if (entryDates.length === 0) return 0;
   const dateSet = new Set(entryDates);
-  const d = fromKey(todayKey());
-  if (!dateSet.has(toKey(d))) d.setDate(d.getDate() - 1);
-  let streak = 0;
-  while (dateSet.has(toKey(d))) {
-    streak++;
-    d.setDate(d.getDate() - 1);
+  const today = fromKey(todayKey());
+
+  // Returns the Monday of the week containing `date` (ISO: Mon–Sun).
+  function getMondayOf(date) {
+    const d = new Date(date);
+    const day = d.getDay(); // 0 = Sun
+    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    return d;
   }
+
+  // Grace: if today isn't worked yet, treat yesterday as the boundary so an
+  // unfinished day doesn't immediately kill a live streak.
+  const boundary = new Date(today);
+  if (!dateSet.has(toKey(today))) boundary.setDate(boundary.getDate() - 1);
+
+  let streak = 0;
+  let weekMonday = getMondayOf(boundary);
+  let isFirstWeek = true;
+
+  while (weekMonday.getFullYear() >= 2020) {
+    const weekSunday = new Date(weekMonday);
+    weekSunday.setDate(weekMonday.getDate() + 6);
+
+    // Only count days up to `boundary` for the first (current) week.
+    const checkThrough = isFirstWeek ? boundary : weekSunday;
+
+    let worked = 0;
+    let missed = 0;
+    const d = new Date(weekMonday);
+    while (d <= checkThrough) {
+      if (dateSet.has(toKey(d))) worked++;
+      else missed++;
+      d.setDate(d.getDate() + 1);
+    }
+
+    if (missed > 2) break;
+
+    streak += worked;
+    isFirstWeek = false;
+    weekMonday.setDate(weekMonday.getDate() - 7);
+  }
+
   return streak;
 }
 
