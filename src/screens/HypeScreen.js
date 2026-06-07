@@ -67,136 +67,142 @@ function GoalForm({ current, onSave, onClose }) {
 
   return (
     <View style={form.overlay}>
-      <View style={[form.card, { paddingBottom: KB_HEIGHT }]}>
-        <Text style={form.title}>{current ? 'Edit Goal' : 'New Goal 🎯'}</Text>
+      <View style={form.card}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[form.scrollContent, { paddingBottom: KB_HEIGHT }]}
+        >
+          <Text style={form.title}>{current ? 'Edit Goal' : 'New Goal 🎯'}</Text>
 
-        <Text style={form.label}>Goal type</Text>
-        <View style={form.toggle}>
-          {TYPES.map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[form.toggleOption, type === t && form.toggleActive]}
-              onPress={() => setType(t)}
-            >
-              <Text style={[form.toggleText, type === t && form.toggleTextActive]}>
-                {TYPE_LABELS[t]}
-              </Text>
+          <Text style={form.label}>Goal type</Text>
+          <View style={form.toggle}>
+            {TYPES.map((t) => (
+              <TouchableOpacity
+                key={t}
+                style={[form.toggleOption, type === t && form.toggleActive]}
+                onPress={() => setType(t)}
+              >
+                <Text style={[form.toggleText, type === t && form.toggleTextActive]}>
+                  {TYPE_LABELS[t]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {isText ? (
+            <>
+              <Text style={form.label}>What's the goal?</Text>
+              <TextInput
+                ref={textRef}
+                style={shared.input}
+                value={goalText}
+                onChangeText={setGoalText}
+                autoCapitalize="sentences"
+              />
+            </>
+          ) : (
+            <>
+              <Text style={form.label}>{isTime ? 'Goal hours' : 'Goal amount ($)'}</Text>
+              <TextInput
+                ref={inputRef}
+                style={shared.input}
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="decimal-pad"
+              />
+
+              <Text style={form.label}>Period</Text>
+              <View style={form.toggle}>
+                {PERIODS.map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    style={[form.toggleOption, period === p && form.toggleActive]}
+                    onPress={() => setPeriod(p)}
+                  >
+                    <Text style={[form.toggleText, period === p && form.toggleTextActive]}>
+                      {PERIOD_LABELS[p]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {isCustom && (
+                <>
+                  <Text style={form.label}>Start date</Text>
+                  {Platform.OS === 'web' ? (
+                    createElement('input', {
+                      type: 'date',
+                      value: toKey(startDate),
+                      onChange: (e) => {
+                        const d = new Date(e.target.value + 'T00:00:00');
+                        if (!isNaN(d)) setStartDate(d);
+                      },
+                      style: {
+                        fontSize: 16, padding: 12, borderRadius: 10,
+                        border: '1.5px solid #FFD1E8', backgroundColor: '#FFF0F5',
+                        color: '#2D0A1F', alignSelf: 'stretch', outline: 'none',
+                        boxSizing: 'border-box',
+                      },
+                    })
+                  ) : Platform.OS === 'ios' ? (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display="compact"
+                      onChange={(_, d) => d && setStartDate(d)}
+                      style={{ alignSelf: 'flex-start', marginLeft: -8 }}
+                    />
+                  ) : (
+                    <>
+                      <TouchableOpacity style={shared.input} onPress={() => setShowPicker(true)}>
+                        <Text style={{ color: colors.textDark }}>{shortDate(toKey(startDate))}</Text>
+                      </TouchableOpacity>
+                      {showPicker && (
+                        <DateTimePicker
+                          value={startDate}
+                          mode="date"
+                          display="default"
+                          onChange={(_, d) => { setShowPicker(false); if (d) setStartDate(d); }}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  <Text style={form.label}>Number of days</Text>
+                  <TextInput
+                    style={shared.input}
+                    value={days}
+                    onChangeText={setDays}
+                    keyboardType="number-pad"
+                  />
+
+                  <View style={form.repeatRow}>
+                    <Text style={form.label}>Repeat when period ends</Text>
+                    <Switch
+                      value={repeat}
+                      onValueChange={setRepeat}
+                      trackColor={{ false: colors.border, true: colors.primary }}
+                      thumbColor={colors.card}
+                    />
+                  </View>
+                </>
+              )}
+            </>
+          )}
+
+          <View style={form.actions}>
+            <TouchableOpacity style={shared.ghostButton} onPress={onClose}>
+              <Text style={shared.ghostButtonText}>Cancel</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        {isText ? (
-          <>
-            <Text style={form.label}>What's the goal?</Text>
-            <TextInput
-              ref={textRef}
-              style={shared.input}
-              value={goalText}
-              onChangeText={setGoalText}
-              autoCapitalize="sentences"
-            />
-          </>
-        ) : (
-          <>
-            <Text style={form.label}>{isTime ? 'Goal hours' : 'Goal amount ($)'}</Text>
-            <TextInput
-              ref={inputRef}
-              style={shared.input}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-            />
-
-            <Text style={form.label}>Period</Text>
-            <View style={form.toggle}>
-              {PERIODS.map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  style={[form.toggleOption, period === p && form.toggleActive]}
-                  onPress={() => setPeriod(p)}
-                >
-                  <Text style={[form.toggleText, period === p && form.toggleTextActive]}>
-                    {PERIOD_LABELS[p]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {isCustom && (
-              <>
-                <Text style={form.label}>Start date</Text>
-                {Platform.OS === 'web' ? (
-                  createElement('input', {
-                    type: 'date',
-                    value: toKey(startDate),
-                    onChange: (e) => {
-                      const d = new Date(e.target.value + 'T00:00:00');
-                      if (!isNaN(d)) setStartDate(d);
-                    },
-                    style: {
-                      fontSize: 16, padding: 12, borderRadius: 10,
-                      border: '1.5px solid #FFD1E8', backgroundColor: '#FFF0F5',
-                      color: '#2D0A1F', alignSelf: 'stretch', outline: 'none',
-                      boxSizing: 'border-box',
-                    },
-                  })
-                ) : Platform.OS === 'ios' ? (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="compact"
-                    onChange={(_, d) => d && setStartDate(d)}
-                    style={{ alignSelf: 'flex-start', marginLeft: -8 }}
-                  />
-                ) : (
-                  <>
-                    <TouchableOpacity style={shared.input} onPress={() => setShowPicker(true)}>
-                      <Text style={{ color: colors.textDark }}>{shortDate(toKey(startDate))}</Text>
-                    </TouchableOpacity>
-                    {showPicker && (
-                      <DateTimePicker
-                        value={startDate}
-                        mode="date"
-                        display="default"
-                        onChange={(_, d) => { setShowPicker(false); if (d) setStartDate(d); }}
-                      />
-                    )}
-                  </>
-                )}
-
-                <Text style={form.label}>Number of days</Text>
-                <TextInput
-                  style={shared.input}
-                  value={days}
-                  onChangeText={setDays}
-                  keyboardType="number-pad"
-                />
-
-                <View style={form.repeatRow}>
-                  <Text style={form.label}>Repeat when period ends</Text>
-                  <Switch
-                    value={repeat}
-                    onValueChange={setRepeat}
-                    trackColor={{ false: colors.border, true: colors.primary }}
-                    thumbColor={colors.card}
-                  />
-                </View>
-              </>
-            )}
-          </>
-        )}
-
-        <View style={form.actions}>
-          <TouchableOpacity style={shared.ghostButton} onPress={onClose}>
-            <Text style={shared.ghostButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[shared.primaryButton, !canSave && form.disabled]}
-            onPress={handleSave}
-          >
-            <Text style={shared.primaryButtonText}>Save</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[shared.primaryButton, !canSave && form.disabled]}
+              onPress={handleSave}
+            >
+              <Text style={shared.primaryButtonText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -729,8 +735,11 @@ const form = StyleSheet.create({
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     padding: spacing.lg,
-    gap: spacing.sm,
+    maxHeight: '88%',
     ...shadow.lg,
+  },
+  scrollContent: {
+    gap: spacing.sm,
   },
   title: {
     fontSize: font.lg,
