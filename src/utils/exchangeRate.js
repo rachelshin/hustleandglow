@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CACHE_KEY = 'prosperous_fx_usd_gbp';
 const ENDPOINT  = 'https://api.frankfurter.dev/v1/latest?base=USD&symbols=GBP';
+const TIMEOUT_MS = 8000; // hard cap so a stalled fetch can't hang the UI forever
 
 /** Today's date as YYYY-MM-DD in the user's local timezone (never UTC). */
 function todayStr() {
@@ -38,8 +39,12 @@ export async function fetchUsdGbpRate() {
   const cached = await loadCachedRate();
   if (cached && cached.date === todayStr()) return cached;
 
+  // AbortController gives us a real timeout — without it, a stalled request
+  // (flaky network, iOS PWA) never settles and the caller hangs indefinitely.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(ENDPOINT);
+    const res = await fetch(ENDPOINT, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const rate = json?.rates?.GBP;
@@ -51,5 +56,7 @@ export async function fetchUsdGbpRate() {
   } catch (e) {
     console.warn('FX fetch failed, falling back to cached rate:', e);
     return cached; // may be null on a first-ever load while offline
+  } finally {
+    clearTimeout(timer);
   }
 }

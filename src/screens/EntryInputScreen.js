@@ -149,8 +149,6 @@ export default function EntryInputScreen({ route, navigation }) {
               keyboardType="decimal-pad"
               autoFocus
               selectTextOnFocus
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
             />
 
             {/* Current balance */}
@@ -163,8 +161,6 @@ export default function EntryInputScreen({ route, navigation }) {
               onChangeText={setCurrentBal}
               keyboardType="decimal-pad"
               selectTextOnFocus
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
             />
 
             {/* Earned preview */}
@@ -302,7 +298,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    fontSize: 30,
+    fontSize: 42,
     fontWeight: '700',
     color: colors.primaryDeep,
     textAlign: 'center',

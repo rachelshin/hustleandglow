@@ -13,7 +13,7 @@
 //      so phone + laptop open at the same time stay in sync automatically.
 //   6. On logout, clearLocalData() wipes AsyncStorage.
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useCategories } from '../hooks/useCategories';
 import { useEntries } from '../hooks/useEntries';
@@ -46,14 +46,25 @@ export function AppProvider({ children }) {
   // { rate, date }; null until the first fetch resolves.
   const [currency, setCurrencyState] = useState('USD');
   const [gbpRate, setGbpRate] = useState(null);
+  // true while a fetch is in flight; lets the UI tell "loading" from "failed"
+  // (gbpRate stays null in both cases) so it can offer a retry instead of
+  // spinning on "Fetching…" forever.
+  const [rateLoading, setRateLoading] = useState(true);
+
+  const refreshRate = useCallback(() => {
+    setRateLoading(true);
+    fetchUsdGbpRate()
+      .then(setGbpRate)
+      .finally(() => setRateLoading(false));
+  }, []);
 
   // Restore the saved per-device preference + fetch today's rate on mount.
   useEffect(() => {
     loadCurrency().then((saved) => {
       if (saved === 'USD' || saved === 'GBP') setCurrencyState(saved);
     });
-    fetchUsdGbpRate().then(setGbpRate);
-  }, []);
+    refreshRate();
+  }, [refreshRate]);
 
   // Push the active config into the calculations module so formatDollars renders
   // in the right currency everywhere — without threading a param through every
@@ -178,6 +189,8 @@ export function AppProvider({ children }) {
     currency,
     chooseCurrency,
     gbpRate,
+    rateLoading,
+    refreshRate,
 
     // Data
     ...categoriesState,

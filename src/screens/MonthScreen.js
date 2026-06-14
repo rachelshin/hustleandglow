@@ -11,8 +11,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Modal,
-  Linking,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { calcDayTotals, formatDollars, formatHours } from '../utils/calculations';
@@ -26,7 +24,7 @@ import {
 import DayBreakdown from '../components/DayBreakdown';
 import CategorySection from '../components/CategorySection';
 import { exportCSV } from '../utils/exportCSV';
-import { ExportIcon, InfoIcon } from '../components/HeaderIcons';
+import { ExportIcon } from '../components/HeaderIcons';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
 import shared from '../styles/shared';
 
@@ -39,21 +37,10 @@ export default function MonthScreen({ navigation }) {
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-indexed
   const [selectedKey, setSelectedKey] = useState(todayKey());
-  const [infoVisible, setInfoVisible] = useState(false);
 
-  // Info (left) + Export (right) buttons in the header
+  // Export (right) button in the header
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => setInfoVisible(true)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          style={{ marginLeft: spacing.md }}
-          accessibilityLabel="About this app"
-        >
-          <InfoIcon size={22} color={colors.primaryDeep} />
-        </TouchableOpacity>
-      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={() => exportCSV(entries, categories, getDayHours)}
@@ -102,7 +89,6 @@ export default function MonthScreen({ navigation }) {
   const selectedHours   = getDayHours(selectedKey);
 
   return (
-    <>
     <ScrollView style={shared.scroll} contentContainerStyle={shared.scrollContent}>
 
       {/* ── Month navigation ───────────────────────────────────────────── */}
@@ -244,40 +230,6 @@ export default function MonthScreen({ navigation }) {
         </>
       )}
     </ScrollView>
-
-      {/* ── App info modal ─────────────────────────────────────────────── */}
-      <Modal
-        visible={infoVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setInfoVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.infoOverlay}
-          activeOpacity={1}
-          onPress={() => setInfoVisible(false)}
-        >
-          <TouchableOpacity activeOpacity={1} style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Hustle & Glow ✨</Text>
-            <Text style={styles.infoBody}>
-              This app is free — always. If you'd like to support getting it listed in the App Store, donations on Ko-fi go directly toward that goal.
-            </Text>
-            <TouchableOpacity
-              style={styles.infoLink}
-              onPress={() => Linking.openURL('https://ko-fi.com/nextrightthing')}
-            >
-              <Text style={styles.infoLinkText}>Support on Ko-fi →</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.infoDismiss}
-              onPress={() => setInfoVisible(false)}
-            >
-              <Text style={styles.infoDismissText}>Close</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </>
   );
 }
 
@@ -468,61 +420,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
-  },
-
-  // ── Info modal ────────────────────────────────────────────────────────
-  infoOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(45,10,31,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  infoCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    width: '100%',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    ...shadow.md,
-  },
-  infoTitle: {
-    fontSize: font.xl,
-    fontWeight: '800',
-    color: colors.primaryDeep,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  infoBody: {
-    fontSize: font.md,
-    color: colors.textMid,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.lg,
-  },
-  infoLink: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.pill,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-    ...shadow.md,
-  },
-  infoLinkText: {
-    color: '#FFFFFF',
-    fontSize: font.md,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  infoDismiss: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-  },
-  infoDismissText: {
-    color: colors.textMuted,
-    fontSize: font.sm,
-    fontWeight: '600',
   },
 });

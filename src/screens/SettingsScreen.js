@@ -15,13 +15,14 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
 import shared from '../styles/shared';
 
 export default function SettingsScreen({ navigation }) {
-  const { currency, chooseCurrency, gbpRate, logOut } = useApp();
+  const { currency, chooseCurrency, gbpRate, rateLoading, refreshRate, logOut } = useApp();
 
   // £ per $1 (e.g. 0.79). null until the first fetch resolves.
   const rate = gbpRate?.rate;
@@ -39,6 +40,23 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <ScrollView style={shared.scroll} contentContainerStyle={shared.scrollContent}>
+      {/* ── About ─────────────────────────────────────────────────────────── */}
+      <View style={styles.aboutCard}>
+        <Text style={styles.aboutTitle}>Hustle & Glow ✨</Text>
+        <Text style={styles.aboutBody}>
+          This app is free and ad-free — always. If you'd like to support getting
+          it listed in the App Store so it's accessible to more models, donations
+          on Ko-fi go directly toward that goal.
+        </Text>
+        <TouchableOpacity
+          style={styles.kofiLink}
+          onPress={() => Linking.openURL('https://ko-fi.com/nextrightthing')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.kofiLinkText}>Support on Ko-fi →</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* ── Display currency ──────────────────────────────────────────────── */}
       <Text style={shared.sectionLabel}>Display currency</Text>
 
@@ -68,21 +86,20 @@ export default function SettingsScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Live rate readout */}
+        {/* Live rate readout — loading, loaded, or failed (tap to retry). */}
         {rate ? (
           <Text style={styles.rateText}>
             Live rate: $1 = £{rate.toFixed(2)} · updates daily
           </Text>
-        ) : (
+        ) : rateLoading ? (
           <Text style={styles.rateMuted}>Fetching today's rate…</Text>
+        ) : (
+          <TouchableOpacity onPress={refreshRate} activeOpacity={0.7}>
+            <Text style={styles.rateWarn}>
+              Couldn't load the exchange rate{currency === 'GBP' ? ' — showing dollars for now' : ''}. Tap to retry.
+            </Text>
+          </TouchableOpacity>
         )}
-
-        {/* Warn if GBP is picked but the rate never loaded (offline first run) */}
-        {currency === 'GBP' && !rate ? (
-          <Text style={styles.rateWarn}>
-            Couldn't load the exchange rate — showing dollars until it's available.
-          </Text>
-        ) : null}
       </View>
 
       {/* ── Account ───────────────────────────────────────────────────────── */}
@@ -100,6 +117,43 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  aboutCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    ...shadow.sm,
+  },
+  aboutTitle: {
+    fontSize: font.xl,
+    fontWeight: '800',
+    color: colors.primaryDeep,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  aboutBody: {
+    fontSize: font.sm,
+    color: colors.textMid,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.md,
+  },
+  kofiLink: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.xl,
+    ...shadow.md,
+  },
+  kofiLinkText: {
+    color: '#FFFFFF',
+    fontSize: font.md,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
