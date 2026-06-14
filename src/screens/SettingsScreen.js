@@ -6,10 +6,11 @@
 // re-values everything at today's live rate, so historical totals shift with the
 // rate until payout. The CSV export always stays in USD regardless of this toggle.
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -22,10 +23,30 @@ import { colors, font, spacing, radius, shadow } from '../styles/theme';
 import shared from '../styles/shared';
 
 export default function SettingsScreen({ navigation }) {
-  const { currency, chooseCurrency, gbpRate, rateLoading, refreshRate, logOut } = useApp();
+  const {
+    currency, chooseCurrency, gbpRate, rateLoading, refreshRate,
+    taxRate, chooseTaxRate, logOut,
+  } = useApp();
 
   // £ per $1 (e.g. 0.79). null until the first fetch resolves.
   const rate = gbpRate?.rate;
+
+  // Tax rate is stored as a fraction (0.25); the field shows a percentage.
+  // toFixed(2) + unary-plus drops trailing zeros so 25 shows as "25", 22.5 as "22.5".
+  const ratePct = (r) => String(+(r * 100).toFixed(2));
+  const [taxText, setTaxText] = useState(ratePct(taxRate));
+
+  // Re-sync the field if the rate changes elsewhere (e.g. loaded from storage
+  // after mount). Doesn't fight typing — taxRate only changes on commit/load.
+  useEffect(() => { setTaxText(ratePct(taxRate)); }, [taxRate]);
+
+  // Commit on blur/submit: clamp to 0–100%, fall back to current rate if blank.
+  const commitTax = () => {
+    const n = parseFloat(taxText);
+    const pct = isNaN(n) ? taxRate * 100 : Math.min(100, Math.max(0, n));
+    chooseTaxRate(pct / 100);
+    setTaxText(ratePct(pct / 100));
+  };
 
   const confirmSignOut = () => {
     if (Platform.OS === 'web') {
@@ -100,6 +121,32 @@ export default function SettingsScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* ── Estimated tax rate ────────────────────────────────────────────── */}
+      <Text style={shared.sectionLabel}>Estimated tax rate</Text>
+
+      <View style={styles.card}>
+        <Text style={styles.cardHint}>
+          The share of earnings set aside for taxes. Drives the tax and take-home
+          figures throughout the app.
+        </Text>
+
+        <View style={styles.taxRow}>
+          <TextInput
+            style={styles.taxInput}
+            value={taxText}
+            onChangeText={(t) => setTaxText(t.replace(/[^0-9.]/g, ''))}
+            onBlur={commitTax}
+            onSubmitEditing={commitTax}
+            keyboardType="numeric"
+            inputMode="numeric"
+            maxLength={5}
+            returnKeyType="done"
+            selectTextOnFocus
+          />
+          <Text style={styles.taxPercent}>%</Text>
+        </View>
       </View>
 
       {/* ── Account ───────────────────────────────────────────────────────── */}
@@ -207,6 +254,28 @@ const styles = StyleSheet.create({
     fontSize: font.xs,
     color: colors.negativeText,
     textAlign: 'center',
+  },
+  taxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+  },
+  taxInput: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.md,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    fontSize: 18, // >= 16 so iOS PWA doesn't auto-zoom on focus
+    fontWeight: '700',
+    color: colors.primaryDeep,
+    textAlign: 'center',
+    minWidth: 84,
+  },
+  taxPercent: {
+    fontSize: font.lg,
+    fontWeight: '700',
+    color: colors.textMid,
   },
   signOut: {
     marginTop: spacing.xs,

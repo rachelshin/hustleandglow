@@ -20,11 +20,12 @@ import { useEntries } from '../hooks/useEntries';
 import { useShifts } from '../hooks/useShifts';
 import { useGoals } from '../hooks/useGoals';
 import {
-  syncFromCloud, pushLocalToCloud, clearLocalData,
+  syncFromCloud, pushLocalToCloud, clearLocalData, subscribeToCloud,
   loadCurrency, saveCurrency,
+  loadTaxRate, saveTaxRate,
 } from '../utils/storage';
 import { fetchUsdGbpRate } from '../utils/exchangeRate';
-import { setCurrency } from '../utils/calculations';
+import { setCurrency, setTaxRate, DEFAULT_TAX_RATE } from '../utils/calculations';
 import { signInWithGoogle as firebaseGoogleSignIn } from '../config/firebase';
 
 const AppContext = createContext(null);
@@ -46,6 +47,10 @@ export function AppProvider({ children }) {
   // { rate, date }; null until the first fetch resolves.
   const [currency, setCurrencyState] = useState('USD');
   const [gbpRate, setGbpRate] = useState(null);
+
+  // Estimated tax rate as a fraction (0.25 = 25%). Cloud-synced across devices
+  // (see the subscription below) since it's an account-level financial setting.
+  const [taxRate, setTaxRateState] = useState(DEFAULT_TAX_RATE);
   // true while a fetch is in flight; lets the UI tell "loading" from "failed"
   // (gbpRate stays null in both cases) so it can offer a retry instead of
   // spinning on "Fetching…" forever.
@@ -62,6 +67,9 @@ export function AppProvider({ children }) {
   useEffect(() => {
     loadCurrency().then((saved) => {
       if (saved === 'USD' || saved === 'GBP') setCurrencyState(saved);
+    });
+    loadTaxRate().then((saved) => {
+      if (saved != null && !isNaN(saved)) setTaxRateState(saved);
     });
     refreshRate();
   }, [refreshRate]);
@@ -81,10 +89,22 @@ export function AppProvider({ children }) {
     setCurrency({ symbol: '$', rate: 1, locale: 'en-US' });
   }
 
+  // Keep the calculations module's tax rate in lockstep with state, so every
+  // screen's totals re-compute with the current rate (same approach as currency).
+  setTaxRate(taxRate);
+
   // Toggle + persist in one step (mirrors the entry-mode toggle pattern).
   const chooseCurrency = (code) => {
     setCurrencyState(code);
     saveCurrency(code);
+  };
+
+  // Set + persist the tax rate (fraction). Clamped to a sane 0–100% range.
+  // Passes the uid so the change is pushed to Firestore and syncs across devices.
+  const chooseTaxRate = (rate) => {
+    const clamped = Math.min(1, Math.max(0, rate));
+    setTaxRateState(clamped);
+    saveTaxRate(clamped, user?.uid);
   };
 
   // Tracks whether the user was logged in during the previous render.
@@ -136,6 +156,17 @@ export function AppProvider({ children }) {
   // Hooks read local AsyncStorage immediately, then Firestore subscriptions
   // keep data fresh without any blocking wait.
   const syncedUserId = (user && user !== undefined) ? user.uid : null;
+
+  // Live-sync the tax rate across devices, the same way the data hooks do. Fires
+  // once immediately with the current cloud value (covers a fresh device), then on
+  // every change. A null payload means this account has never set one, so fall
+  // back to the default — this also resets it for a different user on the device.
+  useEffect(() => {
+    if (!syncedUserId) return;
+    return subscribeToCloud(syncedUserId, 'taxRate', (val) => {
+      setTaxRateState(typeof val === 'number' && !isNaN(val) ? val : DEFAULT_TAX_RATE);
+    });
+  }, [syncedUserId]);
 
   const categoriesState = useCategories(syncedUserId);
   const entriesState    = useEntries(syncedUserId);
@@ -191,6 +222,8 @@ export function AppProvider({ children }) {
     gbpRate,
     rateLoading,
     refreshRate,
+    taxRate,
+    chooseTaxRate,
 
     // Data
     ...categoriesState,

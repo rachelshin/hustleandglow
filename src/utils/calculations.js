@@ -2,10 +2,27 @@
 //
 // How totals work:
 //   gross     = sum of all dollar amounts + sum of (tokens × tokenRate)
-//   taxes     = gross × 0.25  (25% set aside for taxes)
-//   takeHome  = gross × 0.75  (what you actually keep)
+//   taxes     = gross × taxRate   (set aside for taxes; user-editable, default 25%)
+//   takeHome  = gross − taxes     (what you actually keep)
 
-export const TAX_RATE = 0.25;
+// The default the app ships with; used until the user sets their own rate.
+export const DEFAULT_TAX_RATE = 0.25;
+
+// Module-level rate (same trick as the display currency below): AppContext pushes
+// the user's chosen rate in via setTaxRate() on load and whenever they change it,
+// so every call site — calcDayTotals here and the CSV export — stays in sync
+// without threading a param through them.
+let _taxRate = DEFAULT_TAX_RATE;
+
+/** Set the tax rate as a fraction (0.25 = 25%). Ignores out-of-range values. */
+export function setTaxRate(rate) {
+  if (typeof rate === 'number' && rate >= 0 && rate <= 1) _taxRate = rate;
+}
+
+/** Current tax rate as a fraction (e.g. 0.25). */
+export function getTaxRate() {
+  return _taxRate;
+}
 
 /**
  * Convert a raw entry value to dollars.
@@ -29,7 +46,7 @@ export function calcDayTotals(dayEntries = {}) {
     return sum + toDollars(entry.value, entry.type, entry.tokenRate);
   }, 0);
 
-  const taxes = gross * TAX_RATE;
+  const taxes = gross * _taxRate;
   const takeHome = gross - taxes;
 
   return { gross, taxes, takeHome };

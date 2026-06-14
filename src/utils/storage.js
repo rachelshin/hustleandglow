@@ -25,6 +25,7 @@ const KEYS = {
   WHY:          'prosperous_why',
   ENTRY_MODE:   'prosperous_entry_mode',
   CURRENCY:     'prosperous_currency',
+  TAX_RATE:     'prosperous_tax_rate',
 };
 
 // ── Internal cloud helpers ────────────────────────────────────────────────────
@@ -87,13 +88,14 @@ export function subscribeToCloud(uid, type, onData) {
  * (so a brand-new account won't erase existing local defaults).
  */
 export async function syncFromCloud(uid) {
-  const [categories, entries, shifts, activeShift, goals, why] = await Promise.all([
+  const [categories, entries, shifts, activeShift, goals, why, taxRate] = await Promise.all([
     pullFromCloud(uid, 'categories'),
     pullFromCloud(uid, 'entries'),
     pullFromCloud(uid, 'shifts'),
     pullFromCloud(uid, 'activeShift'),
     pullFromCloud(uid, 'goals'),
     pullFromCloud(uid, 'why'),
+    pullFromCloud(uid, 'taxRate'),
   ]);
 
   const writes = [];
@@ -103,6 +105,7 @@ export async function syncFromCloud(uid) {
   if (activeShift !== null) writes.push([KEYS.ACTIVE_SHIFT, JSON.stringify(activeShift)]);
   if (goals       !== null) writes.push([KEYS.GOALS,        JSON.stringify(goals)]);
   if (why         !== null) writes.push([KEYS.WHY,          why]);
+  if (taxRate     !== null) writes.push([KEYS.TAX_RATE,     String(taxRate)]);
 
   if (writes.length > 0) {
     await AsyncStorage.multiSet(writes);
@@ -117,7 +120,7 @@ export async function syncFromCloud(uid) {
 export async function pushLocalToCloud(uid) {
   const pairs = await AsyncStorage.multiGet([
     KEYS.CATEGORIES, KEYS.ENTRIES, KEYS.SHIFTS,
-    KEYS.ACTIVE_SHIFT, KEYS.GOALS, KEYS.WHY,
+    KEYS.ACTIVE_SHIFT, KEYS.GOALS, KEYS.WHY, KEYS.TAX_RATE,
   ]);
 
   const map = Object.fromEntries(pairs);
@@ -128,6 +131,7 @@ export async function pushLocalToCloud(uid) {
     ['activeShift', map[KEYS.ACTIVE_SHIFT]  ? JSON.parse(map[KEYS.ACTIVE_SHIFT])  : null],
     ['goals',       map[KEYS.GOALS]         ? JSON.parse(map[KEYS.GOALS])         : null],
     ['why',         map[KEYS.WHY]           ?? null],
+    ['taxRate',     map[KEYS.TAX_RATE]     != null ? Number(map[KEYS.TAX_RATE])  : null],
   ];
 
   await Promise.all(
@@ -301,6 +305,30 @@ export async function saveCurrency(code) {
     await AsyncStorage.setItem(KEYS.CURRENCY, code);
   } catch (e) {
     console.warn('Failed to save currency', e);
+  }
+}
+
+// ── Estimated tax rate ────────────────────────────────────────────────────────
+// An account-level financial setting (cloud-synced, unlike the currency lens):
+// the fraction of gross set aside for taxes. Stored locally as a string fraction
+// (e.g. '0.25') for instant load; null until the user sets their own, so the
+// caller falls back to DEFAULT_TAX_RATE. Syncs across devices like the data hooks.
+
+export async function loadTaxRate() {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.TAX_RATE);
+    return raw != null ? Number(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveTaxRate(rate, userId) {
+  try {
+    await AsyncStorage.setItem(KEYS.TAX_RATE, String(rate));
+    if (userId) pushToCloud(userId, 'taxRate', rate);
+  } catch (e) {
+    console.warn('Failed to save tax rate', e);
   }
 }
 

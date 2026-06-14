@@ -8,7 +8,7 @@ import { Platform, Share } from 'react-native';
 // Note: this export deliberately uses formatUSD, not formatDollars — the CSV is
 // a financial record and must always show source-of-truth US dollars, never the
 // fluctuating £ display conversion.
-import { toDollars, TAX_RATE, formatUSD, formatHours } from './calculations';
+import { toDollars, getTaxRate, formatUSD, formatHours } from './calculations';
 
 // ── CSV builder ───────────────────────────────────────────────────────────────
 
@@ -77,7 +77,7 @@ export function buildCSV(entries, categories, getDayHours) {
       const { value, type, tokenRate } = entry;
       const sub      = subLookup[subId] ?? { name: 'Unknown Source', categoryName: 'Unknown' };
       const gross    = toDollars(value, type, tokenRate);
-      const tax      = gross * TAX_RATE;
+      const tax      = gross * getTaxRate();
       const takeHome = gross - tax;
 
       totalGross    += gross;
