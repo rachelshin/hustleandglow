@@ -1,0 +1,13 @@
+# Netlify build configuration.
+#
+# Pinned here (not just in the Netlify dashboard) so the build command lives in
+# version control and can't silently drift. The important part is `npm run
+# deploy`: it runs `expo export --platform web` AND scripts/patch-favicon.js.
+# A bare `expo export` build skips the patch, which is the only thing that
+# injects the favicon, web manifest, and iOS-PWA meta tags — so without this,
+# none of those ship to the live site.
+#
+# This file overrides whatever build command is set in the Netlify UI.
+[build]
+  command = "npm run deploy"
+  publish = "dist"
