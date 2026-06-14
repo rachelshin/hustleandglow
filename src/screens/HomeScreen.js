@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { AFFIRMATIONS } from '../constants/defaults';
 import CategorySection from '../components/CategorySection';
 import { SignOutIcon } from '../components/HeaderIcons';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
+import { loadEntryMode, saveEntryMode } from '../utils/storage';
 import shared from '../styles/shared';
 
 export default function HomeScreen({ navigation }) {
@@ -24,6 +25,27 @@ export default function HomeScreen({ navigation }) {
     activeShift, elapsed, startShift, stopShift, getDayHours,
     user, logOut,
   } = useApp();
+
+  // Which way the entry modal opens when you tap an income source:
+  //   'total'   → one input: today's total for that source (the original flow)
+  //   'balance' → two inputs: the source's balance at the start of the shift
+  //               and its balance now; we save the difference as the earnings.
+  // Remembered across app opens (local per-device preference). The saved entry
+  // remembers its own mode, so this toggle only affects brand-new entries.
+  const [entryMode, setEntryMode] = useState('total');
+
+  // Restore the last-used toggle choice on mount.
+  useEffect(() => {
+    loadEntryMode().then((saved) => {
+      if (saved === 'total' || saved === 'balance') setEntryMode(saved);
+    });
+  }, []);
+
+  // Update + persist in one step whenever the user taps the toggle.
+  const chooseEntryMode = (mode) => {
+    setEntryMode(mode);
+    saveEntryMode(mode);
+  };
 
   // Header right: manage-sources icon + sign-out icon.
   useEffect(() => {
@@ -109,6 +131,28 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* Entry-mode toggle: controls which input flow a source opens */}
+      <View style={styles.modeToggle}>
+        <TouchableOpacity
+          style={[styles.modeOption, entryMode === 'total' && styles.modeOptionActive]}
+          onPress={() => chooseEntryMode('total')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.modeText, entryMode === 'total' && styles.modeTextActive]}>
+            Total
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeOption, entryMode === 'balance' && styles.modeOptionActive]}
+          onPress={() => chooseEntryMode('balance')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.modeText, entryMode === 'balance' && styles.modeTextActive]}>
+            Balance
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Income source cards */}
       {categories.map((cat) => (
         <CategorySection
@@ -116,7 +160,7 @@ export default function HomeScreen({ navigation }) {
           category={cat}
           dayEntries={dayEntries}
           onSubcategoryPress={(sub, category) =>
-            navigation.navigate('EntryInput', { subcategory: sub, category, dateKey })
+            navigation.navigate('EntryInput', { subcategory: sub, category, dateKey, entryMode })
           }
         />
       ))}
@@ -174,6 +218,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: spacing.md,
+  },
+  // ── Entry-mode toggle ─────────────────────────────────────────────────────
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.pill,
+    padding: 3,
+    marginBottom: spacing.md,
+    alignSelf: 'center',
+  },
+  modeOption: {
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+  },
+  modeOptionActive: {
+    backgroundColor: colors.card,
+    ...shadow.sm,
+  },
+  modeText: {
+    fontSize: font.sm,
+    fontWeight: '700',
+    color: colors.textMid,
+  },
+  modeTextActive: {
+    color: colors.primaryDeep,
   },
   heroCard: {
     backgroundColor: '#E91E8C',

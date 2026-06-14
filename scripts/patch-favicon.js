@@ -7,6 +7,7 @@
  *   2. Copies assets/icon.png  → dist/icon.png  (needed by the PWA manifest)
  *   3. Copies scripts/manifest.json → dist/manifest.json
  *   4. Injects <link rel="manifest"> before </head>
+ *   5. Injects the apple-mobile-web-app-* meta tags (iOS home-screen PWA) before </head>
  *
  * Usage: node scripts/patch-favicon.js
  * Via package.json: "deploy": "expo export --platform web && node scripts/patch-favicon.js"
@@ -64,6 +65,23 @@ if (!html.includes('rel="manifest"')) {
   console.log('✅  Manifest link injected');
 } else {
   console.log('ℹ️   Manifest link already present');
+}
+
+// Apple iOS PWA meta tags — required for a proper full-screen home-screen
+// install (capable + status bar style + title) plus the touch icon. Points at
+// /icon.png, which is copied into dist/ below (there is no apple-touch-icon.png).
+if (!html.includes('apple-mobile-web-app-capable')) {
+  html = html.replace(
+    '</head>',
+    `  <meta name="apple-mobile-web-app-capable" content="yes" />\n` +
+    `  <meta name="mobile-web-app-capable" content="yes" />\n` +
+    `  <meta name="apple-mobile-web-app-status-bar-style" content="default" />\n` +
+    `  <meta name="apple-mobile-web-app-title" content="Hustle &amp; Glow" />\n` +
+    `  <link rel="apple-touch-icon" href="/icon.png" />\n</head>`
+  );
+  console.log('✅  Apple PWA meta tags injected');
+} else {
+  console.log('ℹ️   Apple PWA meta tags already present');
 }
 
 fs.writeFileSync(DIST_HTML, html, 'utf8');

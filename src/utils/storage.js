@@ -23,6 +23,7 @@ const KEYS = {
   GOAL:         'prosperous_goal',
   GOALS:        'prosperous_goals',
   WHY:          'prosperous_why',
+  ENTRY_MODE:   'prosperous_entry_mode',
 };
 
 // ── Internal cloud helpers ────────────────────────────────────────────────────
@@ -258,6 +259,27 @@ export async function saveGoals(goals, userId) {
     await AsyncStorage.setItem(KEYS.GOALS, JSON.stringify(goals));
     if (userId) pushToCloud(userId, 'goals', goals);
   } catch (e) { console.warn('Failed to save goals', e); }
+}
+
+// ── Entry-mode toggle ─────────────────────────────────────────────────────────
+// A per-device UI preference (the Total | Balance toggle on Home). Local only —
+// no cloud sync — so it remembers your last choice but doesn't fight between
+// devices. Cleared on logout along with everything else.
+
+export async function loadEntryMode() {
+  try {
+    return await AsyncStorage.getItem(KEYS.ENTRY_MODE);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveEntryMode(mode) {
+  try {
+    await AsyncStorage.setItem(KEYS.ENTRY_MODE, mode);
+  } catch (e) {
+    console.warn('Failed to save entry mode', e);
+  }
 }
 
 // ── Why ──────────────────────────────────────────────────────────────────────

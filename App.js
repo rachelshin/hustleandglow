@@ -25,6 +25,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { TouchableOpacity } from 'react-native';
 
 import { AppProvider, useApp } from './src/context/AppContext';
+import injectWebStyles from './src/utils/webStyles';
 import IOSInstallBanner from './src/components/IOSInstallBanner';
 import HomeScreen            from './src/screens/HomeScreen';
 import HypeScreen            from './src/screens/HypeScreen';
@@ -33,6 +34,10 @@ import EntryInputScreen      from './src/screens/EntryInputScreen';
 import CategoryManagerScreen from './src/screens/CategoryManagerScreen';
 import SignInScreen          from './src/screens/SignInScreen';
 import { colors, font } from './src/styles/theme';
+
+// Inject global web CSS (kills the blue focus ring, enforces 16px inputs).
+// No-op on native. See src/utils/webStyles.js for why this runs at runtime.
+injectWebStyles();
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
