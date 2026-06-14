@@ -13,7 +13,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
-import { calcDayTotals, formatDollars, formatHours } from '../utils/calculations';
+import { calcDayTotals, formatDollars, formatHours, taxPctLabel } from '../utils/calculations';
 import {
   todayKey,
   friendlyDate,
@@ -115,7 +115,7 @@ export default function MonthScreen({ navigation }) {
 
           {/* Tax */}
           <View style={styles.summaryCol}>
-            <Text style={styles.summaryLabel}>TAX 25%</Text>
+            <Text style={styles.summaryLabel}>TAX {taxPctLabel()}</Text>
             <Text style={styles.summaryTax}>−{formatDollars(monthTotals.taxes)}</Text>
           </View>
 

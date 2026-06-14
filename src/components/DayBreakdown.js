@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
-import { calcDayTotals, formatDollars, formatHours, toDollars } from '../utils/calculations';
+import { calcDayTotals, formatDollars, formatHours, toDollars, taxPctLabel } from '../utils/calculations';
 
 /**
  * @param {object}    props
@@ -41,7 +41,7 @@ export default function DayBreakdown({ dayEntries, categories, hoursWorked = 0, 
           <View style={styles.taxBadge}>
             <Text style={styles.taxBadgeText}>TAX</Text>
           </View>
-          <Text style={styles.taxLabel}>Taxes Due (25%)</Text>
+          <Text style={styles.taxLabel}>Taxes Due ({taxPctLabel()})</Text>
         </View>
         <Text style={styles.taxAmount}>−{formatDollars(taxes)}</Text>
       </View>

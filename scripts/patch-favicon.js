@@ -84,6 +84,22 @@ if (!html.includes('apple-mobile-web-app-capable')) {
   console.log('ℹ️   Apple PWA meta tags already present');
 }
 
+// Viewport — add viewport-fit=cover so iOS standalone PWAs expose the real
+// env(safe-area-inset-*) values. Without it those insets resolve to 0, so
+// react-navigation / useSafeAreaInsets can't pad around the home indicator and
+// the bottom tab bar sits under it. Expo's generated tag has no viewport-fit.
+if (/viewport-fit\s*=\s*cover/i.test(html)) {
+  console.log('ℹ️   viewport-fit=cover already present');
+} else if (/<meta\s+name="viewport"\s+content="[^"]*"/i.test(html)) {
+  html = html.replace(
+    /(<meta\s+name="viewport"\s+content=")([^"]*)(")/i,
+    (_m, pre, content, post) => `${pre}${content}, viewport-fit=cover${post}`
+  );
+  console.log('✅  viewport-fit=cover added');
+} else {
+  console.warn('⚠️   viewport meta not found — viewport-fit=cover NOT added');
+}
+
 fs.writeFileSync(DIST_HTML, html, 'utf8');
 
 // Copy icon

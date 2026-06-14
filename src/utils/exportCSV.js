@@ -2,13 +2,13 @@
 // (web) or share sheet (native).
 //
 // CSV columns:
-//   Date | Category | Income Source | Type | Amount Entered | Gross | Tax (25%) | Take Home
+//   Date | Category | Income Source | Type | Amount Entered | Gross | Tax (rate) | Take Home
 
 import { Platform, Share } from 'react-native';
 // Note: this export deliberately uses formatUSD, not formatDollars — the CSV is
 // a financial record and must always show source-of-truth US dollars, never the
 // fluctuating £ display conversion.
-import { toDollars, getTaxRate, formatUSD, formatHours } from './calculations';
+import { toDollars, getTaxRate, formatUSD, formatHours, taxPctLabel } from './calculations';
 
 // ── CSV builder ───────────────────────────────────────────────────────────────
 
@@ -47,7 +47,7 @@ export function buildCSV(entries, categories, getDayHours) {
   // Header row
   lines.push(
     ['Date', 'Category', 'Income Source', 'Type',
-     'Amount Entered', 'Gross', 'Tax (25%)', 'Take Home', 'Hours Worked']
+     'Amount Entered', 'Gross', `Tax (${taxPctLabel()})`, 'Take Home', 'Hours Worked']
       .map(cell).join(',')
   );
 

@@ -25,6 +25,15 @@ export function getTaxRate() {
 }
 
 /**
+ * The current tax rate as a percent label, e.g. "25%" or "22.5%".
+ * Reads the same module-level rate the totals math uses, so a label can never
+ * drift from the amount beside it. toFixed(2) + unary-plus drops trailing zeros.
+ */
+export function taxPctLabel() {
+  return `${+(_taxRate * 100).toFixed(2)}%`;
+}
+
+/**
  * Convert a raw entry value to dollars.
  * @param {number} value       - What the user typed (tokens or dollars)
  * @param {'dollar'|'token'} type
