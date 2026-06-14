@@ -35,12 +35,49 @@ export function calcDayTotals(dayEntries = {}) {
   return { gross, taxes, takeHome };
 }
 
+// ── Display currency ──────────────────────────────────────────────────────────
+// IMPORTANT: every amount stored in the app is in US dollars (token sites pay in
+// USD, and the tax set-aside is owed in USD). The display currency is purely a
+// lens applied at format time — we never store converted amounts.
+//
+// This module-level config is the trick that lets us add a £/$ toggle without
+// touching the ~30 call sites of formatDollars: AppContext calls setCurrency()
+// whenever the user flips the toggle or a fresh FX rate arrives, and because the
+// toggle lives in context state, every screen re-renders and re-formats with the
+// new config automatically.
+let _currency = { symbol: '$', rate: 1, locale: 'en-US' };
+
 /**
- * Format a number as a currency string — e.g. 1234.5 → "$1,234.50"
- * @param {number} amount
+ * Update the display currency. Called by AppContext only.
+ * @param {{ symbol?: string, rate?: number, locale?: string }} cfg
+ *        rate = how many display-currency units one US dollar is worth.
+ */
+export function setCurrency(cfg) {
+  _currency = { ..._currency, ...cfg };
+}
+
+/**
+ * Format a dollar amount in the user's chosen display currency.
+ * e.g. with GBP at 0.79:  1234.5 → "£975.26"
+ * @param {number} amount - a US dollar amount
  * @returns {string}
  */
 export function formatDollars(amount) {
+  const { symbol, rate, locale } = _currency;
+  return symbol + Math.abs(amount * rate).toLocaleString(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Format an amount as US dollars, ignoring the display-currency toggle.
+ * Used by the CSV export, which must always reflect the source-of-truth USD
+ * values (records / taxes), never a fluctuating converted figure.
+ * @param {number} amount
+ * @returns {string}
+ */
+export function formatUSD(amount) {
   return '$' + Math.abs(amount).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

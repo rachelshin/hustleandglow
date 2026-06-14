@@ -24,6 +24,7 @@ const KEYS = {
   GOALS:        'prosperous_goals',
   WHY:          'prosperous_why',
   ENTRY_MODE:   'prosperous_entry_mode',
+  CURRENCY:     'prosperous_currency',
 };
 
 // ── Internal cloud helpers ────────────────────────────────────────────────────
@@ -279,6 +280,27 @@ export async function saveEntryMode(mode) {
     await AsyncStorage.setItem(KEYS.ENTRY_MODE, mode);
   } catch (e) {
     console.warn('Failed to save entry mode', e);
+  }
+}
+
+// ── Display currency ──────────────────────────────────────────────────────────
+// Per-device UI preference ('USD' | 'GBP'): which currency totals are shown in.
+// Local only — like the entry-mode toggle — so each device remembers its own
+// view. Amounts are always stored in USD; this only changes the display lens.
+
+export async function loadCurrency() {
+  try {
+    return await AsyncStorage.getItem(KEYS.CURRENCY);
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCurrency(code) {
+  try {
+    await AsyncStorage.setItem(KEYS.CURRENCY, code);
+  } catch (e) {
+    console.warn('Failed to save currency', e);
   }
 }
 

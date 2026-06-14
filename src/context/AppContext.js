@@ -13,24 +13,68 @@
 //      so phone + laptop open at the same time stay in sync automatically.
 //   6. On logout, clearLocalData() wipes AsyncStorage.
 
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useCategories } from '../hooks/useCategories';
 import { useEntries } from '../hooks/useEntries';
 import { useShifts } from '../hooks/useShifts';
 import { useGoals } from '../hooks/useGoals';
-import { syncFromCloud, pushLocalToCloud, clearLocalData } from '../utils/storage';
+import {
+  syncFromCloud, pushLocalToCloud, clearLocalData,
+  loadCurrency, saveCurrency,
+} from '../utils/storage';
+import { fetchUsdGbpRate } from '../utils/exchangeRate';
+import { setCurrency } from '../utils/calculations';
 import { signInWithGoogle as firebaseGoogleSignIn } from '../config/firebase';
 
 const AppContext = createContext(null);
 
 /** Wrap your root navigator with this so all screens share state. */
 export function AppProvider({ children }) {
-  const { user, signIn, signUp: firebaseSignUp, logOut } = useAuth();
+  const {
+    user, isGuest, signIn, signUp: firebaseSignUp,
+    signInAsGuest, linkEmail, linkGoogle, logOut,
+  } = useAuth();
 
   // Tracks whether the current auth transition is a brand-new sign-up, so we
   // push local data to the cloud instead of pulling (which would overwrite it).
   const isNewSignup = useRef(false);
+
+  // ── Display currency ────────────────────────────────────────────────────────
+  // 'USD' (source of truth) or 'GBP' (live-converted display lens, Option 1 —
+  // history re-values at today's rate). `gbpRate` holds the fetched
+  // { rate, date }; null until the first fetch resolves.
+  const [currency, setCurrencyState] = useState('USD');
+  const [gbpRate, setGbpRate] = useState(null);
+
+  // Restore the saved per-device preference + fetch today's rate on mount.
+  useEffect(() => {
+    loadCurrency().then((saved) => {
+      if (saved === 'USD' || saved === 'GBP') setCurrencyState(saved);
+    });
+    fetchUsdGbpRate().then(setGbpRate);
+  }, []);
+
+  // Push the active config into the calculations module so formatDollars renders
+  // in the right currency everywhere — without threading a param through every
+  // call site. This runs synchronously during render (not in an effect) on
+  // purpose: AppProvider renders before its children, so the new config is in
+  // place before any child calls formatDollars. An effect would run after commit,
+  // leaving the toggling render one frame behind in the old currency. The write
+  // is idempotent and derived purely from current state, so it's safe in render.
+  // If GBP is selected but the rate hasn't loaded yet, stay on USD so we never
+  // show a wrong (rate = undefined) amount.
+  if (currency === 'GBP' && gbpRate?.rate) {
+    setCurrency({ symbol: '£', rate: gbpRate.rate, locale: 'en-GB' });
+  } else {
+    setCurrency({ symbol: '$', rate: 1, locale: 'en-US' });
+  }
+
+  // Toggle + persist in one step (mirrors the entry-mode toggle pattern).
+  const chooseCurrency = (code) => {
+    setCurrencyState(code);
+    saveCurrency(code);
+  };
 
   // Tracks whether the user was logged in during the previous render.
   // clearLocalData() should only run on an actual sign-out (logged in → logged out),
@@ -108,14 +152,32 @@ export function AppProvider({ children }) {
     return firebaseSignUp(email, password);
   };
 
+  /**
+   * Sign in as a guest. Like sign-up, this is a brand-new account, so flag it
+   * so the auth useEffect pushes local → cloud rather than pulling cloud → local.
+   */
+  const handleGuestSignIn = () => {
+    isNewSignup.current = true;
+    return signInAsGuest();
+  };
+
   const value = {
     // Auth
     user,
+    isGuest,
     authChecked: user !== undefined,
     signIn: handleSignIn,
     signUp: handleSignUp,
+    signInAsGuest: handleGuestSignIn,
     signInWithGoogle: firebaseGoogleSignIn,
+    linkEmail,
+    linkGoogle,
     logOut,
+
+    // Display currency
+    currency,
+    chooseCurrency,
+    gbpRate,
 
     // Data
     ...categoriesState,

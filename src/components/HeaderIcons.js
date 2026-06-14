@@ -86,6 +86,26 @@ export function SignOutIcon({ size = 22, color = '#C2185B' }) {
 }
 
 /**
+ * Gear / settings icon: cog outline with a centre hub.
+ * Used for the Settings screen entry point in the Home header.
+ */
+export function SettingsIcon({ size = 22, color = '#C2185B' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {/* Cog body — 8-tooth rounded gear */}
+      <Path
+        d="M12 2.5l1.5 2.2 2.6-.6.4 2.6 2.4 1.1-1 2.4 1.6 2.1-2 1.7.5 2.6-2.6.3L14 22l-2-1.7L10 22l-1.4-2.3-2.6-.3.5-2.6-2-1.7 1.6-2.1-1-2.4 2.4-1.1.4-2.6 2.6.6L12 2.5z"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinejoin="round"
+      />
+      {/* Centre hub */}
+      <Circle cx={12} cy={12} r={3} stroke={color} strokeWidth={1.8} />
+    </Svg>
+  );
+}
+
+/**
  * Sliders / manage icon: three horizontal lines, each with a movable knob.
  * Used for "Manage Sources" / settings.
  */

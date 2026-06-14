@@ -6,15 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
-  Platform,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { calcDayTotals, formatDollars, formatHours, formatElapsed } from '../utils/calculations';
 import { todayKey, friendlyDate, dailyIndex } from '../utils/dateHelpers';
 import { AFFIRMATIONS } from '../constants/defaults';
 import CategorySection from '../components/CategorySection';
-import { SignOutIcon } from '../components/HeaderIcons';
+import UpgradeAccountModal from '../components/UpgradeAccountModal';
+import { SettingsIcon } from '../components/HeaderIcons';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
 import { loadEntryMode, saveEntryMode } from '../utils/storage';
 import shared from '../styles/shared';
@@ -23,8 +22,11 @@ export default function HomeScreen({ navigation }) {
   const {
     categories, categoriesLoading, getDayEntries,
     activeShift, elapsed, startShift, stopShift, getDayHours,
-    user, logOut,
+    user, isGuest,
   } = useApp();
+
+  // "Save your account" upgrade modal (only reachable while a guest).
+  const [upgradeVisible, setUpgradeVisible] = useState(false);
 
   // Which way the entry modal opens when you tap an income source:
   //   'total'   → one input: today's total for that source (the original flow)
@@ -47,35 +49,22 @@ export default function HomeScreen({ navigation }) {
     saveEntryMode(mode);
   };
 
-  // Header right: manage-sources icon + sign-out icon.
+  // Header right: gear icon → Settings (currency toggle + sign out live there).
   useEffect(() => {
     if (!user) return;
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          style={styles.headerSignOut}
-          onPress={() => {
-            if (Platform.OS === 'web') {
-              if (window.confirm('Sign out of Hustle & Glow?')) logOut();
-            } else {
-              Alert.alert(
-                'Sign Out',
-                'Sign out of Hustle & Glow?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Sign Out', style: 'destructive', onPress: logOut },
-                ]
-              );
-            }
-          }}
+          style={styles.headerSettings}
+          onPress={() => navigation.navigate('Settings')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel="Sign out"
+          accessibilityLabel="Settings"
         >
-          <SignOutIcon size={22} color={colors.primaryDeep} />
+          <SettingsIcon size={22} color={colors.primaryDeep} />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, user, logOut]);
+  }, [navigation, user]);
 
   const dateKey    = todayKey();
   const dayEntries = getDayEntries(dateKey);
@@ -99,6 +88,23 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.date}>{friendlyDate(dateKey)}</Text>
 
       <Text style={styles.affirmation}>{affirmation}</Text>
+
+      {/* Guest upgrade nudge — only shown to anonymous users */}
+      {isGuest && (
+        <TouchableOpacity
+          style={styles.guestBanner}
+          onPress={() => setUpgradeVisible(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.guestBannerEmoji}>🔒</Text>
+          <View style={styles.guestBannerTextWrap}>
+            <Text style={styles.guestBannerTitle}>You're a guest</Text>
+            <Text style={styles.guestBannerSub}>
+              Save your account so your data isn't lost →
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Hero card: amount left, button center, time right */}
       <View style={styles.heroCard}>
@@ -188,6 +194,11 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       )}
+
+      <UpgradeAccountModal
+        visible={upgradeVisible}
+        onClose={() => setUpgradeVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -198,9 +209,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ── Header sign-out icon ──────────────────────────────────────────────────
-  headerSignOut: {
+  // ── Header settings icon ──────────────────────────────────────────────────
+  headerSettings: {
     marginRight: spacing.md,
+  },
+
+  // ── Guest upgrade banner ──────────────────────────────────────────────────
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  guestBannerEmoji: {
+    fontSize: 22,
+  },
+  guestBannerTextWrap: {
+    flex: 1,
+  },
+  guestBannerTitle: {
+    fontSize: font.sm,
+    fontWeight: '700',
+    color: colors.primaryDeep,
+  },
+  guestBannerSub: {
+    fontSize: font.xs,
+    color: colors.textMid,
   },
 
   date: {

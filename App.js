@@ -32,6 +32,7 @@ import HypeScreen            from './src/screens/HypeScreen';
 import MonthScreen           from './src/screens/MonthScreen';
 import EntryInputScreen      from './src/screens/EntryInputScreen';
 import CategoryManagerScreen from './src/screens/CategoryManagerScreen';
+import SettingsScreen        from './src/screens/SettingsScreen';
 import SignInScreen          from './src/screens/SignInScreen';
 import { colors, font } from './src/styles/theme';
 
@@ -196,6 +197,21 @@ function AppShell() {
           component={CategoryManagerScreen}
           options={({ navigation }) => ({
             title: 'Manage Sources',
+            ...headerStyle,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={navStyles.backBtn}>
+                <Text style={navStyles.backText}>‹ Back</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
+
+        {/* Settings — shown via the gear icon in the Home header */}
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={({ navigation }) => ({
+            title: 'Settings',
             ...headerStyle,
             headerLeft: () => (
               <TouchableOpacity onPress={() => navigation.goBack()} style={navStyles.backBtn}>

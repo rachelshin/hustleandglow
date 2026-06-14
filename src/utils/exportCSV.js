@@ -5,7 +5,10 @@
 //   Date | Category | Income Source | Type | Amount Entered | Gross | Tax (25%) | Take Home
 
 import { Platform, Share } from 'react-native';
-import { toDollars, TAX_RATE, formatDollars, formatHours } from './calculations';
+// Note: this export deliberately uses formatUSD, not formatDollars — the CSV is
+// a financial record and must always show source-of-truth US dollars, never the
+// fluctuating £ display conversion.
+import { toDollars, TAX_RATE, formatUSD, formatHours } from './calculations';
 
 // ── CSV builder ───────────────────────────────────────────────────────────────
 
@@ -81,13 +84,13 @@ export function buildCSV(entries, categories, getDayHours) {
       totalTax      += tax;
       totalTakeHome += takeHome;
 
-      const amountEntered = type === 'token' ? `${value} tokens` : formatDollars(value);
+      const amountEntered = type === 'token' ? `${value} tokens` : formatUSD(value);
 
       lines.push(
         [dateKey, sub.categoryName, sub.name,
          type === 'token' ? 'Token' : 'Dollar',
          amountEntered,
-         formatDollars(gross), formatDollars(tax), formatDollars(takeHome),
+         formatUSD(gross), formatUSD(tax), formatUSD(takeHome),
          hoursDisplay]
           .map(cell).join(',')
       );
@@ -98,7 +101,7 @@ export function buildCSV(entries, categories, getDayHours) {
   lines.push(new Array(9).fill('').map(cell).join(','));
   lines.push(
     ['', '', '', '', 'TOTAL',
-     formatDollars(totalGross), formatDollars(totalTax), formatDollars(totalTakeHome),
+     formatUSD(totalGross), formatUSD(totalTax), formatUSD(totalTakeHome),
      totalHours > 0 ? formatHours(totalHours) : '']
       .map(cell).join(',')
   );

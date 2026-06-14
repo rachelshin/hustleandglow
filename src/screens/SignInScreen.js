@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import GoogleLogo from '../components/GoogleLogo';
 import { useApp } from '../context/AppContext';
@@ -38,8 +39,25 @@ function friendlyError(code) {
   }
 }
 
+// Warn the guest that anonymous data isn't backed up, then proceed if they confirm.
+// window.confirm on web (works in the PWA); Alert.alert on native.
+const GUEST_TITLE = 'Continue as guest?';
+const GUEST_MESSAGE =
+  "Your data is saved to this device only. If you delete the app, clear your browser, or switch devices, it may be lost — and you won't be able to recover it.\n\nYou can create an account later to keep everything safe.";
+
+function confirmGuest(onConfirm) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${GUEST_TITLE}\n\n${GUEST_MESSAGE}`)) onConfirm();
+  } else {
+    Alert.alert(GUEST_TITLE, GUEST_MESSAGE, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Continue', onPress: onConfirm },
+    ]);
+  }
+}
+
 export default function SignInScreen() {
-  const { signIn, signUp, signInWithGoogle } = useApp();
+  const { signIn, signUp, signInWithGoogle, signInAsGuest } = useApp();
 
   const [mode, setMode]                   = useState('signin'); // 'signin' | 'signup'
   const [email, setEmail]                 = useState('');
@@ -214,6 +232,28 @@ export default function SignInScreen() {
               <Text style={styles.googleBtnText}>Continue with Google</Text>
             </View>
           </TouchableOpacity>
+
+          {/* Guest sign-in — warns first, then uses Firebase anonymous auth */}
+          <TouchableOpacity
+            style={[styles.guestBtn, loading && styles.disabled]}
+            onPress={() =>
+              confirmGuest(async () => {
+                setError('');
+                setLoading(true);
+                try {
+                  await signInAsGuest();
+                } catch (e) {
+                  setError(friendlyError(e.code));
+                } finally {
+                  setLoading(false);
+                }
+              })
+            }
+            disabled={loading}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.guestBtnText}>Continue as guest →</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Privacy note shown only on sign-up */}
@@ -352,6 +392,18 @@ const styles = StyleSheet.create({
     fontSize: font.md,
     fontWeight: '600',
     color: colors.textDark,
+  },
+
+  // ── Guest button ──────────────────────────────────────────────────────────
+  guestBtn: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  guestBtnText: {
+    fontSize: font.sm,
+    fontWeight: '600',
+    color: colors.textMuted,
   },
 
   // ── Footer ────────────────────────────────────────────────────────────────

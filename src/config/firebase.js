@@ -74,3 +74,32 @@ export async function signInWithGoogle() {
     throw { code: 'google/native-not-configured' };
   }
 }
+
+/**
+ * Upgrade the current guest (anonymous) user to a real Google account.
+ *
+ * linkWithPopup keeps the SAME uid, so all the guest's Firestore data carries
+ * over with zero migration. If that Google account already has its own account
+ * (auth/credential-already-in-use), we can't merge — we fall back to signing
+ * into the existing account instead (the guest's anonymous data is left behind).
+ */
+export async function linkWithGoogle() {
+  if (Platform.OS !== 'web') throw { code: 'google/native-not-configured' };
+
+  const {
+    GoogleAuthProvider,
+    linkWithPopup,
+    signInWithPopup,
+  } = require('firebase/auth');
+  const provider = new GoogleAuthProvider();
+
+  try {
+    return await linkWithPopup(auth.currentUser, provider);
+  } catch (e) {
+    if (e.code === 'auth/credential-already-in-use') {
+      // That Google account is already registered — sign into it instead.
+      return signInWithPopup(auth, provider);
+    }
+    throw e;
+  }
+}
