@@ -22,7 +22,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TouchableOpacity } from 'react-native';
 
 import { AppProvider, useApp } from './src/context/AppContext';
@@ -54,11 +53,6 @@ const headerStyle = {
 };
 
 function TabNavigator() {
-  // Add the bottom safe-area inset (home indicator) to the tab bar. Because we
-  // set an explicit height/paddingBottom below, react-navigation's automatic
-  // inset handling is bypassed, so we fold it in ourselves. 0 on devices/
-  // browsers without an indicator, so the bar is unchanged there.
-  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -76,8 +70,8 @@ function TabNavigator() {
           backgroundColor: colors.tabBg,
           borderTopColor:  colors.border,
           borderTopWidth:  1.5,
-          paddingBottom:   14 + insets.bottom,
-          height:          70 + insets.bottom,
+          paddingBottom:   14,
+          height:          70,
         },
         tabBarLabelStyle: {
           fontSize:   font.xs,
