@@ -45,7 +45,10 @@ const Tab   = createBottomTabNavigator();
 
 // Shared header style applied to all stack screens
 const headerStyle = {
-  headerStyle:       { backgroundColor: colors.card },
+  // height trims the chunky default header (≈64) so the centered title doesn't
+  // float in excess space above and below. Applies on web/PWA (the verified
+  // target) and Android; native-stack ignores height on iOS native.
+  headerStyle:       { backgroundColor: colors.card, height: 48 },
   headerTintColor:   colors.primaryDeep,
   headerTitleStyle:  { fontWeight: '800', fontSize: font.lg },
   headerTitleAlign:  'center',
