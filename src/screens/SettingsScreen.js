@@ -19,6 +19,7 @@ import {
   Linking,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
+import { SignOutIcon } from '../components/HeaderIcons';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
 import shared from '../styles/shared';
 
@@ -58,6 +59,23 @@ export default function SettingsScreen({ navigation }) {
       ]);
     }
   };
+
+  // Sign-out lives as an icon in the top-right of the header (clearer than a
+  // button buried at the bottom of the scroll).
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={confirmSignOut}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={{ marginRight: spacing.md }}
+          accessibilityLabel="Sign out"
+        >
+          <SignOutIcon size={22} color={colors.primaryDeep} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   return (
     <ScrollView style={shared.scroll} contentContainerStyle={shared.scrollContent}>
@@ -148,17 +166,6 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.taxPercent}>%</Text>
         </View>
       </View>
-
-      {/* ── Account ───────────────────────────────────────────────────────── */}
-      <Text style={shared.sectionLabel}>Account</Text>
-
-      <TouchableOpacity
-        style={[shared.dangerButton, styles.signOut]}
-        onPress={confirmSignOut}
-        activeOpacity={0.8}
-      >
-        <Text style={shared.dangerButtonText}>Sign Out</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -276,8 +283,5 @@ const styles = StyleSheet.create({
     fontSize: font.lg,
     fontWeight: '700',
     color: colors.textMid,
-  },
-  signOut: {
-    marginTop: spacing.xs,
   },
 });
