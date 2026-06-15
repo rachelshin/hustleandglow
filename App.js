@@ -45,15 +45,12 @@ const Tab   = createBottomTabNavigator();
 
 // Shared header style applied to all stack screens
 const headerStyle = {
-  // height trims the chunky default header (≈64) so the centered title doesn't
-  // float in excess space above and below. Applies on web/PWA (the verified
-  // target) and Android; native-stack ignores height on iOS native.
-  headerStyle:       { backgroundColor: '#00B3FF', height: 48 }, // TEMP diagnostic colour — revert to colors.card
-  // The PWA status bar is reserved by iOS outside the web viewport (status-bar
-  // style "default"), so react-navigation's status-bar spacer is redundant and
-  // only adds extra space above the title — making the top padding look bigger
-  // than the bottom. Zeroing it lets the title center evenly in the 48px bar.
-  headerStatusBarHeight: 0,
+  // height trims the chunky default header (≈64) to a tighter bar. Applies on
+  // web/PWA (the verified target) and Android; native-stack ignores height on
+  // iOS native. NOTE: the white strip above the header in the installed PWA is
+  // the iOS status bar (clock/battery/Dynamic Island), not padding — it's OS
+  // chrome and can't be removed without black-translucent + viewport-fit=cover.
+  headerStyle:       { backgroundColor: colors.card, height: 48 },
   headerTintColor:   colors.primaryDeep,
   headerTitleStyle:  { fontWeight: '800', fontSize: font.lg },
   headerTitleAlign:  'center',
