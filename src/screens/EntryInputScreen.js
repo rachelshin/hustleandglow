@@ -2,14 +2,17 @@
 // Reached by tapping a subcategory on Home, or the edit icon on History/Month.
 // Pre-fills with existing entry if one has been saved for this day.
 //
-// Two input flows, chosen by the Total | Balance toggle on Home (passed in as
-// `entryMode`):
+// Two input flows, chosen per source by the Total | Balance toggle at the top
+// of this screen:
 //   'total'   → one input: today's total for this source.
 //   'balance' → two inputs: the source's balance at the start of the shift and
 //               its balance now. We save the difference as the earnings, so all
 //               the totals math downstream is identical to total mode.
-// An entry already saved in balance mode always re-opens in balance mode,
-// regardless of the toggle, so editing never silently converts it.
+// The toggle is per-entry, so sites that hand you a daily total and sites that
+// only show a running balance can be mixed freely on the same day. The last
+// choice is remembered as the default for the next new entry (`entryMode`,
+// passed in from Home). An entry already saved in balance mode re-opens in
+// balance mode so editing never silently changes its format.
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -23,6 +26,7 @@ import {
   Platform,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
+import { saveEntryMode } from '../utils/storage';
 import { tokenPreview, formatDollars, toDollars } from '../utils/calculations';
 import { friendlyDate } from '../utils/dateHelpers';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
@@ -38,9 +42,18 @@ export default function EntryInputScreen({ route, navigation }) {
   const isToken    = subcategory.type === 'token';
   const tokenRate  = subcategory.tokenRate ?? 0.05;
 
-  // A previously-saved balance entry keeps its mode; otherwise follow the toggle.
+  // A previously-saved balance entry keeps its mode; otherwise start from the
+  // remembered default. The toggle below lets the user switch per source.
   const savedBalance = existing != null && existing.startBalance != null;
-  const mode = savedBalance ? 'balance' : (entryMode === 'balance' ? 'balance' : 'total');
+  const [mode, setMode] = useState(
+    savedBalance ? 'balance' : (entryMode === 'balance' ? 'balance' : 'total')
+  );
+
+  // Switch format and remember the choice as the default for the next new entry.
+  const chooseMode = (next) => {
+    setMode(next);
+    saveEntryMode(next);
+  };
 
   // ── Total mode state ──
   const [value, setValue] = useState(
@@ -134,6 +147,29 @@ export default function EntryInputScreen({ route, navigation }) {
               {isToken ? `🪙 Token site · $${tokenRate}/token` : '💵 Dollar site'}
             </Text>
           </View>
+        </View>
+
+        {/* Format toggle — pick how this source reports earnings. Lets total
+            and balance sources be mixed freely on the same day. */}
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeOption, mode === 'total' && styles.modeOptionActive]}
+            onPress={() => chooseMode('total')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.modeText, mode === 'total' && styles.modeTextActive]}>
+              Total
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeOption, mode === 'balance' && styles.modeOptionActive]}
+            onPress={() => chooseMode('balance')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.modeText, mode === 'balance' && styles.modeTextActive]}>
+              Balance
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {mode === 'balance' ? (
@@ -277,6 +313,31 @@ const styles = StyleSheet.create({
     color: colors.textMid,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // ── Format toggle (Total | Balance) ──────────────────────────────────────
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.pill,
+    padding: 3,
+    alignSelf: 'center',
+  },
+  modeOption: {
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+  },
+  modeOptionActive: {
+    backgroundColor: colors.card,
+    ...shadow.sm,
+  },
+  modeText: {
+    fontSize: font.sm,
+    fontWeight: '700',
+    color: colors.textMid,
+  },
+  modeTextActive: {
+    color: colors.primaryDeep,
   },
   bigInput: {
     backgroundColor: colors.card,

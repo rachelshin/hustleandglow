@@ -15,7 +15,7 @@ import CategorySection from '../components/CategorySection';
 import UpgradeAccountModal from '../components/UpgradeAccountModal';
 import { SettingsIcon } from '../components/HeaderIcons';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
-import { loadEntryMode, saveEntryMode } from '../utils/storage';
+import { loadEntryMode } from '../utils/storage';
 import shared from '../styles/shared';
 
 export default function HomeScreen({ navigation }) {
@@ -28,25 +28,20 @@ export default function HomeScreen({ navigation }) {
   // "Save your account" upgrade modal (only reachable while a guest).
   const [upgradeVisible, setUpgradeVisible] = useState(false);
 
-  // Which way the entry modal opens when you tap an income source:
-  //   'total'   → one input: today's total for that source (the original flow)
-  //   'balance' → two inputs: the source's balance at the start of the shift
-  //               and its balance now; we save the difference as the earnings.
-  // Remembered across app opens (local per-device preference). The saved entry
-  // remembers its own mode, so this toggle only affects brand-new entries.
-  const [entryMode, setEntryMode] = useState('total');
-
-  // Restore the last-used toggle choice on mount.
-  useEffect(() => {
-    loadEntryMode().then((saved) => {
-      if (saved === 'total' || saved === 'balance') setEntryMode(saved);
-    });
-  }, []);
-
-  // Update + persist in one step whenever the user taps the toggle.
-  const chooseEntryMode = (mode) => {
-    setEntryMode(mode);
-    saveEntryMode(mode);
+  // The Total | Balance format is now chosen per source on the entry screen, so
+  // sites that give a daily total and sites that only show a balance can be
+  // mixed on the same day. We just read the remembered default (a local
+  // per-device preference) fresh each time a source is tapped and pass it in to
+  // seed that screen's toggle.
+  const openEntry = (sub, category) => {
+    loadEntryMode().then((saved) =>
+      navigation.navigate('EntryInput', {
+        subcategory: sub,
+        category,
+        dateKey,
+        entryMode: saved === 'balance' ? 'balance' : 'total',
+      })
+    );
   };
 
   // Header right: gear icon → Settings (currency toggle + sign out live there).
@@ -137,37 +132,13 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Entry-mode toggle: controls which input flow a source opens */}
-      <View style={styles.modeToggle}>
-        <TouchableOpacity
-          style={[styles.modeOption, entryMode === 'total' && styles.modeOptionActive]}
-          onPress={() => chooseEntryMode('total')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeText, entryMode === 'total' && styles.modeTextActive]}>
-            Total
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeOption, entryMode === 'balance' && styles.modeOptionActive]}
-          onPress={() => chooseEntryMode('balance')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeText, entryMode === 'balance' && styles.modeTextActive]}>
-            Balance
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Income source cards */}
       {categories.map((cat) => (
         <CategorySection
           key={cat.id}
           category={cat}
           dayEntries={dayEntries}
-          onSubcategoryPress={(sub, category) =>
-            navigation.navigate('EntryInput', { subcategory: sub, category, dateKey, entryMode })
-          }
+          onSubcategoryPress={openEntry}
         />
       ))}
 
@@ -258,32 +229,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: spacing.md,
-  },
-  // ── Entry-mode toggle ─────────────────────────────────────────────────────
-  modeToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.pill,
-    padding: 3,
-    marginBottom: spacing.md,
-    alignSelf: 'center',
-  },
-  modeOption: {
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-  },
-  modeOptionActive: {
-    backgroundColor: colors.card,
-    ...shadow.sm,
-  },
-  modeText: {
-    fontSize: font.sm,
-    fontWeight: '700',
-    color: colors.textMid,
-  },
-  modeTextActive: {
-    color: colors.primaryDeep,
   },
   heroCard: {
     backgroundColor: '#E91E8C',
