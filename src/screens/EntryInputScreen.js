@@ -49,12 +49,6 @@ export default function EntryInputScreen({ route, navigation }) {
     savedBalance ? 'balance' : (entryMode === 'balance' ? 'balance' : 'total')
   );
 
-  // Switch format and remember the choice as the default for the next new entry.
-  const chooseMode = (next) => {
-    setMode(next);
-    saveEntryMode(next);
-  };
-
   // ── Total mode state ──
   const [value, setValue] = useState(
     existing && !savedBalance && existing.value != null ? String(existing.value) : ''
@@ -72,6 +66,33 @@ export default function EntryInputScreen({ route, navigation }) {
     startBal !== '' && currentBal !== '' &&
     !isNaN(Number(startBal)) && !isNaN(Number(currentBal));
   const earned = bothFilled ? Number(currentBal) - Number(startBal) : null;
+
+  // Switch format and carry the entered earnings across so the same amount
+  // shows in both views, and editing either one keeps them in sync:
+  //   balance → total:  total = now − start            ($10→$25 ⇒ $15)
+  //   total → balance:  now   = start + total          ($15 ⇒ $10→$25)
+  // The start balance is preserved across the round trip, so editing the total
+  // just moves the "now" figure: balance $10→$15 (earns $5), switch to total,
+  // change it to $10, switch back ⇒ balance $10→$20. With no prior balance the
+  // start is 0 (total $5 ⇒ $0→$5). Trim float noise (25.30 − 10.10) to 2 dp.
+  const chooseMode = (next) => {
+    if (next !== mode) {
+      const trim = (n) => String(Math.round(n * 100) / 100);
+      if (next === 'balance') {
+        const total = value !== '' && !isNaN(Number(value)) ? Number(value) : null;
+        // Only rebuild the balance view when the total changed the earnings.
+        if (total != null && total !== earned) {
+          const start = startBal !== '' && !isNaN(Number(startBal)) ? Number(startBal) : 0;
+          setStartBal(trim(start));
+          setCurrentBal(trim(start + total));
+        }
+      } else if (earned != null && earned !== Number(value)) {
+        setValue(trim(earned));
+      }
+    }
+    setMode(next);
+    saveEntryMode(next);
+  };
 
   // ── Total mode previews ──
   const preview   = isToken ? tokenPreview(value, tokenRate) : null;
