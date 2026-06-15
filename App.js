@@ -48,7 +48,7 @@ const headerStyle = {
   // height trims the chunky default header (≈64) so the centered title doesn't
   // float in excess space above and below. Applies on web/PWA (the verified
   // target) and Android; native-stack ignores height on iOS native.
-  headerStyle:       { backgroundColor: colors.card, height: 48 },
+  headerStyle:       { backgroundColor: '#00B3FF', height: 48 }, // TEMP diagnostic colour — revert to colors.card
   // The PWA status bar is reserved by iOS outside the web viewport (status-bar
   // style "default"), so react-navigation's status-bar spacer is redundant and
   // only adds extra space above the title — making the top padding look bigger
