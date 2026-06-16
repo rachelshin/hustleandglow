@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { loadGoals, saveGoals, subscribeToCloud } from '../utils/storage';
 import { calcDayTotals, formatDollars } from '../utils/calculations';
-import { getPeriodKeys, calcStreak, shortDate, fromKey, toKey, todayKey } from '../utils/dateHelpers';
+import { getPeriodKeys, calcStreak, shortDate, fromKey, toKey, todayKey, dailyIndex } from '../utils/dateHelpers';
 import { GOAL_TREATS } from '../constants/defaults';
 
 function makeId() {
@@ -100,7 +100,14 @@ export function useGoals(entries, entryDates, getDayHours, userId) {
     const progress  = goal.amount > 0 ? Math.min(periodValue / goal.amount, 1) : 0;
     const milestone = getMilestone(progress);
     const pool      = milestone ? GOAL_TREATS[milestone] : null;
-    const treat     = pool ? pool[Math.floor(goal.amount) % pool.length] : null;
+    // Daily goals get a fresh message per level each day (offset by milestone so
+    // the four levels don't all land on the same line). Other periods stay fixed
+    // to the goal amount so they don't change mid-period.
+    const treat     = pool
+      ? pool[goal.period === 'daily'
+          ? (dailyIndex(pool.length) + milestone / 25) % pool.length
+          : Math.floor(goal.amount) % pool.length]
+      : null;
     return { ...goal, effectiveStart: start, periodValue, progress, milestone, treat };
   });
 
