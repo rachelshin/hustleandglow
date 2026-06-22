@@ -5,16 +5,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, font, spacing, radius, shadow } from '../styles/theme';
-import { calcDayTotals, formatDollars, formatHours, toDollars, taxPctLabel } from '../utils/calculations';
+import { calcDayTotals, formatDollars, toDollars, taxPctLabel } from '../utils/calculations';
 
 /**
  * @param {object}    props
  * @param {object}    props.dayEntries   - { subcategoryId: { value, type, tokenRate } }
  * @param {Array}     props.categories   - Full category list (for names)
- * @param {number}    [props.hoursWorked] - Hours logged via the timer for this day
  * @param {function}  [props.onEdit]     - Called with (subcategory) to open edit screen
+ *
+ * Hours worked are shown/edited separately (see the hours card on the Month
+ * screen), so this component is purely the earnings breakdown.
  */
-export default function DayBreakdown({ dayEntries, categories, hoursWorked = 0, onEdit }) {
+export default function DayBreakdown({ dayEntries, categories, onEdit }) {
   const { gross, taxes, takeHome } = calcDayTotals(dayEntries);
 
   if (!gross) {
@@ -45,22 +47,6 @@ export default function DayBreakdown({ dayEntries, categories, hoursWorked = 0, 
         </View>
         <Text style={styles.taxAmount}>−{formatDollars(taxes)}</Text>
       </View>
-
-      {/* Hours worked — only shown if the timer was used that day */}
-      {hoursWorked > 0 && (
-        <>
-          <View style={styles.divider} />
-          <View style={styles.hoursRow}>
-            <View style={styles.hoursLeft}>
-              <View style={styles.hoursBadge}>
-                <Text style={styles.hoursBadgeText}>⏱</Text>
-              </View>
-              <Text style={styles.hoursLabel}>Hours Worked</Text>
-            </View>
-            <Text style={styles.hoursValue}>{formatHours(hoursWorked)}</Text>
-          </View>
-        </>
-      )}
 
       <View style={styles.divider} />
 
@@ -175,38 +161,6 @@ const styles = StyleSheet.create({
     fontSize: font.md,
     fontWeight: '700',
     color: colors.negativeText,
-  },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    backgroundColor: '#F5F9FF',
-  },
-  hoursLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  hoursBadge: {
-    backgroundColor: '#D0E8FF',
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  hoursBadgeText: {
-    fontSize: font.xs,
-  },
-  hoursLabel: {
-    fontSize: font.sm,
-    color: colors.textMid,
-    fontWeight: '500',
-  },
-  hoursValue: {
-    fontSize: font.md,
-    fontWeight: '700',
-    color: '#1565C0',
   },
   catGroup: {
     paddingHorizontal: spacing.md,

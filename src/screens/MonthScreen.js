@@ -22,6 +22,7 @@ import {
   firstWeekdayOfMonth,
 } from '../utils/dateHelpers';
 import DayBreakdown from '../components/DayBreakdown';
+import HoursEditModal from '../components/HoursEditModal';
 import CategorySection from '../components/CategorySection';
 import { exportCSV } from '../utils/exportCSV';
 import { ExportIcon } from '../components/HeaderIcons';
@@ -31,12 +32,13 @@ import shared from '../styles/shared';
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 export default function MonthScreen({ navigation }) {
-  const { categories, entries, getDayEntries, getDayHours } = useApp();
+  const { categories, entries, getDayEntries, getDayHours, setDayHours } = useApp();
 
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-indexed
   const [selectedKey, setSelectedKey] = useState(todayKey());
+  const [editingHours, setEditingHours] = useState(false);
 
   // Export (right) button in the header
   useEffect(() => {
@@ -89,6 +91,7 @@ export default function MonthScreen({ navigation }) {
   const selectedHours   = getDayHours(selectedKey);
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={shared.scroll} contentContainerStyle={shared.scrollContent}>
 
       {/* ── Month navigation ───────────────────────────────────────────── */}
@@ -200,7 +203,6 @@ export default function MonthScreen({ navigation }) {
       <DayBreakdown
         dayEntries={selectedEntries}
         categories={categories}
-        hoursWorked={selectedHours}
         onEdit={(sub) => {
           const cat = categories.find((c) =>
             c.subcategories.some((s) => s.id === sub.id)
@@ -212,6 +214,26 @@ export default function MonthScreen({ navigation }) {
           });
         }}
       />
+
+      {/* Hours worked — tap to add, edit, or delete for this day */}
+      <TouchableOpacity
+        style={styles.hoursCard}
+        onPress={() => setEditingHours(true)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.hoursLeft}>
+          <View style={styles.hoursBadge}>
+            <Text style={styles.hoursBadgeText}>⏱</Text>
+          </View>
+          <Text style={styles.hoursLabel}>Hours Worked</Text>
+        </View>
+        <View style={styles.hoursRight}>
+          <Text style={selectedHours > 0 ? styles.hoursValue : styles.hoursAdd}>
+            {selectedHours > 0 ? formatHours(selectedHours) : 'Add'}
+          </Text>
+          <Text style={styles.hoursPencil}>✏️</Text>
+        </View>
+      </TouchableOpacity>
 
       {/* Income source shortcuts for selected day */}
       {categories.some(c => c.subcategories.length > 0) && (
@@ -230,6 +252,16 @@ export default function MonthScreen({ navigation }) {
         </>
       )}
     </ScrollView>
+
+    {editingHours && (
+      <HoursEditModal
+        dateKey={selectedKey}
+        hours={selectedHours}
+        onSave={setDayHours}
+        onClose={() => setEditingHours(false)}
+      />
+    )}
+    </View>
   );
 }
 
@@ -420,5 +452,57 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
+  },
+
+  // ── Editable hours card ───────────────────────────────────────────────
+  hoursCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F5F9FF',
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    marginTop: spacing.sm,
+    ...shadow.sm,
+  },
+  hoursLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  hoursBadge: {
+    backgroundColor: '#D0E8FF',
+    borderRadius: radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  hoursBadgeText: {
+    fontSize: font.xs,
+  },
+  hoursLabel: {
+    fontSize: font.sm,
+    color: colors.textMid,
+    fontWeight: '500',
+  },
+  hoursRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  hoursValue: {
+    fontSize: font.md,
+    fontWeight: '700',
+    color: '#1565C0',
+  },
+  hoursAdd: {
+    fontSize: font.sm,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  hoursPencil: {
+    fontSize: 14,
   },
 });

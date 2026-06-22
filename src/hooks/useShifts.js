@@ -67,5 +67,26 @@ export function useShifts(userId) {
     return (completed + active) / 3_600_000;
   }, [shifts, activeShift]);
 
-  return { activeShift, elapsed, startShift, stopShift, getDayHours };
+  /**
+   * Manually set the recorded hours for a day (used to correct, add, or delete
+   * hours from the calendar). Replaces any timer-logged shifts for that day with
+   * a single block of the given length, anchored at noon — the app only ever
+   * shows a day's total, never individual shift times, so collapsing them loses
+   * nothing the user can see. Passing 0 (or less) clears the day entirely. The
+   * live active shift is device-local and left untouched.
+   */
+  const setDayHours = useCallback((dateKey, hours) => {
+    const next = { ...shifts };
+    if (!hours || hours <= 0) {
+      delete next[dateKey];
+    } else {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      const start = new Date(y, m - 1, d, 12, 0, 0).getTime();
+      next[dateKey] = [{ start, end: start + Math.round(hours * 3_600_000) }];
+    }
+    setShifts(next);
+    saveShifts(next, userId);
+  }, [shifts, userId]);
+
+  return { activeShift, elapsed, startShift, stopShift, getDayHours, setDayHours };
 }
