@@ -84,12 +84,10 @@ export function firstWeekdayOfMonth(year, month) {
  * Pick a daily affirmation that stays consistent within a day.
  * Uses the day-of-year so it changes every day but never mid-day.
  */
-/** Returns the YYYY-MM-DD key for Monday of the current week. */
+/** Returns the YYYY-MM-DD key for Sunday of the current week (weeks run Sun–Sat). */
 export function weekStartKey() {
   const d = new Date();
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
+  d.setDate(d.getDate() - d.getDay()); // getDay(): 0 = Sun … 6 = Sat
   return toKey(d);
 }
 
