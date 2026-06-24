@@ -22,8 +22,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TouchableOpacity } from 'react-native';
 
+import withSwipeTabs from './src/components/SwipeTabs';
 import { AppProvider, useApp } from './src/context/AppContext';
 import injectWebStyles from './src/utils/webStyles';
 import IOSInstallBanner from './src/components/IOSInstallBanner';
@@ -43,6 +45,13 @@ injectWebStyles();
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
+// Wrap each tab screen for horizontal swipe navigation. Created ONCE at module
+// scope — building these inside TabNavigator's render would hand <Tab.Screen> a
+// brand-new component type every render and remount the screen (losing state).
+const HomeTab  = withSwipeTabs(HomeScreen);
+const HypeTab  = withSwipeTabs(HypeScreen);
+const MonthTab = withSwipeTabs(MonthScreen);
+
 // Shared header style applied to all stack screens
 const headerStyle = {
   // height trims the chunky default header (≈64) to a tighter bar. Applies on
@@ -58,9 +67,13 @@ const headerStyle = {
 };
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        // Subtle horizontal slide + cross-fade when changing tabs. Applies to
+        // both tab taps and the swipe gesture (which just calls navigate()).
+        animation: 'shift',
         tabBarIcon: ({ focused }) => {
           const icons = { Home: '✨', Hype: '⭐', Month: '📅' };
           return (
@@ -75,8 +88,11 @@ function TabNavigator() {
           backgroundColor: colors.tabBg,
           borderTopColor:  colors.border,
           borderTopWidth:  1.5,
-          paddingBottom:   14,
-          height:          70,
+          // Add the device's bottom safe-area inset so labels clear the Android
+          // gesture/nav bar (and iOS home indicator). On web without
+          // viewport-fit=cover the inset is 0, so the PWA is unchanged.
+          paddingBottom:   14 + insets.bottom,
+          height:          70 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize:   font.xs,
@@ -87,17 +103,17 @@ function TabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={HomeTab}
         options={{ title: 'Today', headerTitle: 'Today' }}
       />
       <Tab.Screen
         name="Hype"
-        component={HypeScreen}
+        component={HypeTab}
         options={{ title: 'Hype', headerTitle: 'Hype 💫' }}
       />
       <Tab.Screen
         name="Month"
-        component={MonthScreen}
+        component={MonthTab}
         options={{ title: 'Month' }}
       />
     </Tab.Navigator>
@@ -256,9 +272,12 @@ function DesktopFrame({ children }) {
 
 const frame = StyleSheet.create({
   outer: {
-    // Fill the whole browser viewport
+    // Fill the whole browser viewport. Use dvh (dynamic viewport height), not
+    // vh: on Android PWA `100vh` is the LARGEST viewport and includes the strip
+    // behind the system nav/gesture bar, so a `100vh` child overflows the
+    // visible area and its bottom (the tab bar) gets clipped by overflow:hidden.
     flex: 1,
-    minHeight: '100vh',
+    minHeight: '100dvh',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -266,7 +285,7 @@ const frame = StyleSheet.create({
   phone: {
     width: '100%',
     maxWidth: 430,
-    height: '100vh',
+    height: '100dvh',
     overflow: 'hidden',
     // Subtle elevation so it floats over the background
     shadowColor: '#000',
@@ -300,10 +319,12 @@ export default function App() {
   return (
     <DesktopFrame>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppProvider>
-          <AppShell />
-        </AppProvider>
-        <IOSInstallBanner />
+        <SafeAreaProvider>
+          <AppProvider>
+            <AppShell />
+          </AppProvider>
+          <IOSInstallBanner />
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </DesktopFrame>
   );
