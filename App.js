@@ -16,7 +16,7 @@
 //   └── CategoryManager (navigated to from Home's "Add Sites" link)
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, Platform } from 'react-native';
+import { View, Text, Animated, Easing, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -74,6 +74,12 @@ function TabNavigator() {
         // Subtle horizontal slide + cross-fade when changing tabs. Applies to
         // both tab taps and the swipe gesture (which just calls navigate()).
         animation: 'shift',
+        // Snappier than the default 150ms inOut preset, which eases slowly at
+        // both ends and feels "sticky". Faster + ease-out lands quickly.
+        transitionSpec: {
+          animation: 'timing',
+          config: { duration: 110, easing: Easing.out(Easing.ease) },
+        },
         tabBarIcon: ({ focused }) => {
           const icons = { Home: '✨', Hype: '⭐', Month: '📅' };
           return (
