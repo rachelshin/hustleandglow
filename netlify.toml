@@ -11,3 +11,33 @@
 [build]
   command = "npm run deploy"
   publish = "dist"
+
+# ── Cache headers ─────────────────────────────────────────────────────────────
+# This app has NO service worker, so PWA updates rely entirely on the HTTP cache.
+# The rule that makes updates reliable: never cache the entry point, always cache
+# the hashed assets. index.html is rewritten every build to point at a new
+# index-[hash].js, so as long as the browser re-fetches index.html on launch it
+# picks up the new bundle. The hashed files under /_expo/ have unique names per
+# build, so they're safe to cache forever (immutable).
+
+# Entry point + manifest: always revalidate, never serve stale.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Hashed build assets: immutable, cache for a year.
+[[headers]]
+  for = "/_expo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
